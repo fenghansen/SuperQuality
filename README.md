@@ -1,0 +1,2 @@
+# SuperQuality
+ Improve Image Quality
