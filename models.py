@@ -7,7 +7,7 @@ from base_layers import *
 class Unet(nn.Module):
     def __init__(self, filters=32, activation='lrelu'):
         super().__init__()
-        self.conv1_1 = Conv2D(4, filters)
+        self.conv1_1 = Conv2D(3, filters)
         self.conv1_2 = Conv2D(filters, filters)
         self.pool1 = MaxPooling2D()
         
@@ -50,8 +50,8 @@ class Unet(nn.Module):
         self.conv10_1 = nn.Conv2d(filters, 3, kernel_size=1, stride=1)
         self.out = nn.Sigmoid()
     
-    def forward(self, R, I):
-        x = torch.cat([R, I], dim=1)
+    def forward(self, x):
+        # x = torch.cat([R, I], dim=1)
         conv1 = self.conv1_1(x)
         conv1 = self.conv1_2(conv1)
         pool1 = self.pool1(conv1)

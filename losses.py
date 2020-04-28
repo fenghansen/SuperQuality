@@ -172,6 +172,18 @@ class Restore_Loss(nn.Module):
         return loss_restore
 
 
+class Unet_Loss(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.ssim_loss = pytorch_ssim.SSIM()
+
+    def forward(self, R_low, R_high, hook=-1):
+        loss_recon = F.mse_loss(R_low, R_high)
+        # loss_ssim = 1-self.ssim_loss(R_low, R_high)
+        loss_restore = loss_recon# + loss_ssim
+        return loss_restore
+
+
 if __name__ == "__main__":
     from dataloader import *
     from torch.utils.data import DataLoader
