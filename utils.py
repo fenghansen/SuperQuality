@@ -51,6 +51,46 @@ def no_grad(fn):
         return fn
 
 
+def load_weights(model, path):
+    pretrained_dict=torch.load(path)
+    model_dict=model.state_dict()
+    # 1. filter out unnecessary keys
+    pretrained_dict = {k: v for k, v in pretrained_dict.items() if k in model_dict}
+    # 2. overwrite entries in the existing state dict
+    model_dict.update(pretrained_dict)
+    model.load_state_dict(model_dict)
+    return model
+
+
+class data_prefetcher():
+    def __init__(self, loader):
+        self.loader = iter(loader)
+        self.stream = torch.cuda.Stream()
+        self.mean = torch.tensor([0.485 * 255, 0.456 * 255, 0.406 * 255]).cuda().view(1,3,1,1)
+        self.std = torch.tensor([0.229 * 255, 0.224 * 255, 0.225 * 255]).cuda().view(1,3,1,1)
+        # With Amp, it isn't necessary to manually convert data to half.
+        # if args.fp16:
+        #     self.mean = self.mean.half()
+        #     self.std = self.std.half()
+        self.preload()
+
+    def preload(self):
+        try:
+            self.next_input, self.next_target = next(self.loader)
+        except StopIteration:
+            self.next_input = None
+            self.next_target = None
+            return
+        with torch.cuda.stream(self.stream):
+            self.next_input = self.next_input.cuda(non_blocking=True)
+            self.next_target = self.next_target.cuda(non_blocking=True)
+            # With Amp, it isn't necessary to manually convert data to half.
+            # if args.fp16:
+            #     self.next_input = self.next_input.half()
+            # else:
+            self.next_input = self.next_input.float()
+
+
 # def rgb2hsv(img):
 #     if torch.is_tensor:
 #         log(f'Image tensor size is {img.size()}')

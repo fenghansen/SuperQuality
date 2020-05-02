@@ -176,11 +176,24 @@ class Unet_Loss(nn.Module):
     def __init__(self):
         super().__init__()
         self.ssim_loss = pytorch_ssim.SSIM()
+    
+    def gradient_loss(self, low, high):
+        low_gradient_x = gradient(low, "x")
+        high_gradient_x = gradient(high, "x")
+        low_gradient_y = gradient(low, "y")
+        high_gradient_y = gradient(high, "y")
+        x_loss = F.l1_loss(low_gradient_x, high_gradient_x)
+        y_loss = F.l1_loss(low_gradient_y, high_gradient_y)
+        gradient_loss = torch.mean(x_loss + y_loss) 
+        return gradient_loss
 
-    def forward(self, R_low, R_high, hook=-1):
-        loss_recon = F.mse_loss(R_low, R_high)
-        # loss_ssim = 1-self.ssim_loss(R_low, R_high)
-        loss_restore = loss_recon# + loss_ssim
+    def forward(self, low, high, hook=-1):
+        # low = low[:,:-1,:,:]
+        high = high[:,:-1,:,:]
+        loss_recon = F.l1_loss(low, high)
+        # loss_grad = self.gradient_loss(low, high)
+        loss_ssim = 1-self.ssim_loss(low, high)
+        loss_restore = loss_recon + loss_ssim
         return loss_restore
 
 
@@ -189,18 +202,37 @@ if __name__ == "__main__":
     from torch.utils.data import DataLoader
     from torchvision.utils import make_grid
     from matplotlib import pyplot as plt
-    root_path_train = r'H:\datasets\Low-Light Dataset\KinD++\LOLdataset\our485'
+    root_path_train = r'C:\DeepLearning\GitHub\MSRCR_Python\LOLtest'
     list_path_train = build_LOLDataset_list_txt(root_path_train)
-    Batch_size = 2
+    Batch_size = 1
     log("Buliding LOL Dataset...")
-    dst_train = LOLDataset(root_path_train, list_path_train, transform=None, crop_size=400, to_RAM=True)
+    dst_test = LOLDataset(root_path_train, list_path_train, to_RAM=True, training=False)
     # But when we are training a model, the mean should have another value
-    trainloader = DataLoader(dst_train, batch_size = Batch_size)
-    for i, data in enumerate(trainloader):
-        _, L_high, name = data
-        L_gradient_x = gradient_no_abs(L_high, "x", device='cpu', kernel='sobel')
-        epsilon = 0.01*torch.ones_like(L_gradient_x)
-        Denominator_x = torch.max(L_gradient_x, epsilon)
-        imgs = Denominator_x
-        img = imgs[1].numpy()
-        sample(img, figure_size=(1,1), img_dim=400)
+    testloader = DataLoader(dst_test, batch_size = Batch_size)
+    for i, data in enumerate(testloader):
+        L_low, L_high, name = data
+        L_low_2 = nn.AvgPool2d((2,2))(L_low)
+        L_low_4 = nn.AvgPool2d((2,2))(L_low_2)
+        L_low_8 = nn.AvgPool2d((2,2))(L_low_4)
+        L_high_2 = nn.AvgPool2d((2,2))(L_high)
+        L_high_4 = nn.AvgPool2d((2,2))(L_high_2)
+        L_high_8 = nn.AvgPool2d((2,2))(L_high_4)
+        imgs = torch.cat([L_low, L_high], dim=1)
+        imgs_2 = torch.cat([L_low_2, L_high_2], dim=1)
+        imgs_4 = torch.cat([L_low_4, L_high_4], dim=1)
+        imgs_8 = torch.cat([L_low_8, L_high_8], dim=1)
+        # L_gradient_low = gradient_no_abs(L_high, "x", device='cpu', kernel='sobel') + \
+        #                  gradient_no_abs(L_high, "y", device='cpu', kernel='sobel')
+        # L_gradient_high = gradient_no_abs(L_low, "x", device='cpu', kernel='sobel') + \
+        #                   gradient_no_abs(L_low, "y", device='cpu', kernel='sobel')
+        # loss = torch.abs(L_gradient_low - L_gradient_high)
+        # imgs = torch.cat([L_gradient_low, L_gradient_high, loss], dim=1)
+        log(name)
+        img = imgs[0].numpy()
+        sample(img, figure_size=(1,2), img_dim=img.shape[-2:])
+        img = imgs_2[0].numpy()
+        sample(img, figure_size=(1,2), img_dim=img.shape[-2:])
+        img = imgs_4[0].numpy()
+        sample(img, figure_size=(1,2), img_dim=img.shape[-2:])
+        img = imgs_8[0].numpy()
+        sample(img, figure_size=(1,2), img_dim=img.shape[-2:])

@@ -7,18 +7,19 @@ from base_trainer import BaseTrainer
 from losses import *
 from models import *
 from base_parser import BaseParser
+from skimage.measure import compare_ssim, compare_psnr
 from dataloader import *
 
-class Trainer(BaseTrainer):
+class HSV_Trainer(BaseTrainer):
     def train(self):
         print(f'Using device {self.device}')
         self.model.to(device=self.device)
         summary(self.model, input_size=(3, 128, 128))
         # faster convolutions, but more memory
-        # cudnn.benchmark = True
+        torch.backends.cudnn.benchmark
 
         optimizer = torch.optim.Adam(self.model.parameters(), lr=self.learning_rate)
-        scheduler = lr_scheduler.ExponentialLR(optimizer, gamma=0.997)
+        scheduler = lr_scheduler.ExponentialLR(optimizer, gamma=0.99)
         try:
             for iter in range(self.epochs):
                 epoch_loss = 0
@@ -46,8 +47,12 @@ class Trainer(BaseTrainer):
                     self.test(iter, plot_dir='./images/samples-unetonly')
 
                 if iter % self.save_frequency == 0:
-                    torch.save(self.model.state_dict(), './weights/unetonly.pth')
+                    torch.save(self.model.state_dict(), f'./weights/unetonly_{iter//100}.pth')
                     log("Weight Has saved as 'unetonly.pth'")
+
+                w = self.model.get_w()
+                self.model.set_w()
+                log(f"Now w_res is {w:.4f}")
                         
                 scheduler.step()
                 iter_end_time = time.time()
@@ -75,35 +80,60 @@ class Trainer(BaseTrainer):
                 L_high = L_high_hsv.to(self.device)
                 # Foward Denoise
                 L_recon = self.model(L_low)
+
+                ones = torch.ones((1,1,400,600)).to(self.device)
+                V_high = L_high[:,-1,:,:].view((1,1,400,600))
+                L_recon_v = torch.cat([L_recon, V_high], dim=1)
+                L_recon = torch.cat([L_recon, ones], dim=1)
+
+                L_low = L_low[:,:-1,:,:]
+                L_low_v = torch.cat([L_low, V_high], dim=1)
+                L_low = torch.cat([L_low, ones], dim=1)
+                
+                L_high = L_high[:,:-1,:,:]
+                L_high_v = torch.cat([L_high, V_high], dim=1)
+                L_high = torch.cat([L_high, ones], dim=1)
+
+                L_low = colors.hsv_to_rgb(L_low)
                 L_output = colors.hsv_to_rgb(L_recon)
+                L_high = colors.hsv_to_rgb(L_high)
+                L_low_v = colors.hsv_to_rgb(L_low_v)
+                L_output_v = colors.hsv_to_rgb(L_recon_v)
+                L_high_v = colors.hsv_to_rgb(L_high_v)
+
 
                 L_output_np = L_output.detach().cpu().numpy()[0]
-                L_low_np = L_low_tensor.numpy()[0]
-                L_high_np = L_high_tensor.numpy()[0]
-                sample_imgs = np.concatenate( (L_low_np, L_output_np, L_high_np), axis=0 )
-                filepath = os.path.join(plot_dir, f'{name[0]}_epoch_{epoch}.png')
-                split_point = [0, 3, 6, 9]
+                L_low_np = L_low.detach().cpu().numpy()[0]
+                L_high_np = L_high.detach().cpu().numpy()[0]
+                L_output_v_np = L_output_v.detach().cpu().numpy()[0]
+                L_low_v_np = L_low_v.detach().cpu().numpy()[0]
+                L_high_v_np = L_high_v.detach().cpu().numpy()[0]
+
+                log("compare_psnr()")
+                sample_imgs = np.concatenate( (L_low_np, L_output_np, L_high_np, 
+                                            L_low_v_np, L_output_v_np, L_high_v_np), axis=0 )
+                filepath = os.path.join(plot_dir, f'{name[0]}_epoch_{epoch//100}.png')
+                split_point = [0, 3, 6, 9, 12, 15, 18]
                 img_dim = L_low_np.shape[1:]
-                sample(sample_imgs, split=split_point, figure_size=(1, 3), 
+                sample(sample_imgs, split=split_point, figure_size=(2, 3), 
                             img_dim=img_dim, path=filepath, num=epoch)
 
 
 if __name__ == "__main__":
     criterion = Unet_Loss()
-    model = Unet()
+    model = Unet_mini(w_res=0.5)
 
     parser = BaseParser()
     args = parser.parse()
-    # args.checkpoint = True
-    # if args.checkpoint is not None:
-    #     pretrain = torch.load('./weights/unetonly.pth')
-    #     model.load_state_dict(pretrain)
-    #     print('Model loaded from unetonly.pth')
+    args.checkpoint = True
+    if args.checkpoint is not None:
+        model = load_weights(model, path='./weights/unetonly_1.pth')
+        print('Model loaded from unetonly.pth')
 
     with open(args.config) as f:
         config = yaml.load(f)
 
-    root_path_train = r'H:\datasets\Low-Light Dataset\KinD++\LOLdataset\our485'
+    root_path_train = r'C:\DeepLearning\KinD_plus-master\LOLdataset\our485'
     root_path_test = r'C:\DeepLearning\KinD_plus-master\LOLdataset\eval15'
     list_path_train = build_LOLDataset_list_txt(root_path_train)
     list_path_test = build_LOLDataset_list_txt(root_path_test)
@@ -120,7 +150,7 @@ if __name__ == "__main__":
     train_loader = DataLoader(dst_train, batch_size = config['batch_size'], shuffle=True)
     test_loader = DataLoader(dst_test, batch_size=1)
 
-    trainer = Trainer(config, train_loader, criterion, model, dataloader_test=test_loader)
+    trainer = HSV_Trainer(config, train_loader, criterion, model, dataloader_test=test_loader)
     # --config ./config/config.yaml
     if args.mode == 'train':
         trainer.train()

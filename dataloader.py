@@ -59,8 +59,8 @@ class LOLDataset(Dataset):
         if self.to_RAM:
             for i, fileinfo in enumerate(self.files):
                 name = fileinfo["name"]
-                lr_img = Image.open(fileinfo["lr"])
-                hr_img = Image.open(fileinfo["hr"])
+                lr_img = Image.open(fileinfo["lr"]).convert('RGB')
+                hr_img = Image.open(fileinfo["hr"]).convert('RGB')
                 self.data.append({
                     "lr": lr_img,
                     "hr": hr_img,
@@ -78,8 +78,8 @@ class LOLDataset(Dataset):
         '''load the datas'''
         if not self.to_RAM:
             name = datafiles["name"]
-            lr_img = Image.open(datafiles["lr"])
-            hr_img = Image.open(datafiles["hr"])
+            lr_img = Image.open(datafiles["lr"]).convert('RGB')
+            hr_img = Image.open(datafiles["hr"]).convert('RGB')
         else:
             name = self.data[idx]["name"]
             lr_img = self.data[idx]["lr"]

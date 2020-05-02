@@ -73,6 +73,15 @@ class MaxPooling2D(nn.Module):
         return self.maxpool(x)
 
 
+class AvgPooling2D(nn.Module):
+    def __init__(self, kernel_size=2, stride=2):
+        super().__init__()
+        self.avgpool = nn.AvgPool2d(kernel_size=2, stride=2)
+
+    def forward(self, x):
+        return self.avgpool(x)
+
+
 class Concat(nn.Module):
     def forward(self, x, y):
         _, _, xh, xw = x.size()
