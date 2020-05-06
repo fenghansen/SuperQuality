@@ -1,6 +1,9 @@
 # custom
-./images
-./weights
+images/
+weights/
+*.png
+*.pth
+*.json
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -127,6 +130,4 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
-*.png
-*.pth
-*.json
+

@@ -71,17 +71,46 @@ def gradient_no_abs(maps, direction, device='cuda', kernel='sobel'):
     return grad_norm
 
 
+# 写完才想起来这for在pytorch里好像巨慢，还是不用了吧
+def Pyramid_Sample(img, max_scale=8):
+    imgs = []
+    sample = img
+    power = 1
+    while 2**power <= max_scale:
+        sample = nn.AvgPool2d(2,2)(sample)
+        imgs.append(sample)
+        power += 1
+    return imgs
+
+def Pyramid_Loss(low1,low2,low4,low8,high1,high2,high4,high8):
+    loss1 = F.l1_loss(low1, high1)
+    loss2 = F.l1_loss(low2, high2)
+    loss4 = F.l1_loss(low4, high4)
+    loss8 = F.l1_loss(low8, high8)
+    loss = (loss1*1 + loss2*2 + loss4*4 + loss8*8) / 15
+    return loss
+
+
 class Decom_Loss(nn.Module):
     def __init__(self):
         super().__init__()
 
     def reflectance_similarity(self, R_low, R_high):
-        return torch.mean(torch.abs(R_low - R_high))
+        R_low2 = nn.AvgPool2d(2,2)(R_low)
+        R_low4 = nn.AvgPool2d(2,2)(R_low2)
+        R_low8 = nn.AvgPool2d(2,2)(R_low4)
+        R_high2 = nn.AvgPool2d(2,2)(R_high)
+        R_high4 = nn.AvgPool2d(2,2)(R_high2)
+        R_high8 = nn.AvgPool2d(2,2)(R_high4)
+        # loss = Pyramid_Loss(low1,low2,low4,low8,high1,high2,high4,high8)
+        loss1 = F.l1_loss(R_low, R_high)
+        loss2 = F.l1_loss(R_low2, R_high2)
+        loss4 = F.l1_loss(R_low4, R_high4)
+        loss8 = F.l1_loss(R_low8, R_high8)
+        loss = (loss1*1 + loss2*2 + loss4*4 + loss8*8) / 15
+        return loss
     
     def illumination_smoothness(self, I, L, name='low', hook=-1):
-        # L_transpose = L.permute(0, 2, 3, 1)
-        # L_gray_transpose = 0.299*L[:,:,:,0] + 0.587*L[:,:,:,1] + 0.114*L[:,:,:,2]
-        # L_gray = L.permute(0, 3, 1, 2)
         L_gray = 0.299*L[:,0,:,:] + 0.587*L[:,1,:,:] + 0.114*L[:,2,:,:]
         L_gray = L_gray.unsqueeze(dim=1)
         I_gradient_x = gradient(I, "x")
@@ -114,42 +143,67 @@ class Decom_Loss(nn.Module):
                     M_gradient_x + M_gradient_y, x_loss+ y_loss, path=f'./images/samples-features/mutual_consist_epoch{hook}.png')
         return mutual_loss
 
-    def reconstruction_error(self, R_low, R_high, I_low_3, I_high_3, L_low, L_high):
-        recon_loss_low = torch.mean(torch.abs(R_low * I_low_3 -  L_low))
-        recon_loss_high = torch.mean(torch.abs(R_high * I_high_3 - L_high))
-        # recon_loss_l2h = torch.mean(torch.abs(R_high * I_low_3 -  L_low))
-        # recon_loss_h2l = torch.mean(torch.abs(R_low * I_high_3 - L_high))
-        return recon_loss_high + recon_loss_low # + recon_loss_l2h + recon_loss_h2l
-
-    def forward(self, R_low, R_high, I_low, I_high, L_low, L_high, hook=-1):
+    def reconstruction_error(self, R_low, R_high, I_low, I_high, L_low, L_high):
         I_low_3 = torch.cat([I_low, I_low, I_low], dim=1)
         I_high_3 = torch.cat([I_high, I_high, I_high], dim=1)
+        recon_loss_low = torch.mean(torch.abs(R_low * I_low_3 -  L_low))
+        recon_loss_high = torch.mean(torch.abs(R_high * I_high_3 - L_high))
+
+        L_low4 = nn.AvgPool2d(4,4)(L_low)
+        L_low8 = nn.AvgPool2d(2,2)(L_low4)
+        L_high4 = nn.AvgPool2d(4,4)(L_high)
+        L_high8 = nn.AvgPool2d(2,2)(L_high4)
+
+        R_low4 = nn.AvgPool2d(4,4)(R_low)
+        R_low8 = nn.AvgPool2d(2,2)(R_low4)
+        R_high4 = nn.AvgPool2d(4,4)(R_high)
+        R_high8 = nn.AvgPool2d(2,2)(R_high4)
+
+        I_low4 = nn.AvgPool2d(4,4)(I_low_3)
+        I_low8 = nn.AvgPool2d(2,2)(I_low4)
+        I_high4 = nn.AvgPool2d(4,4)(I_high_3)
+        I_high8 = nn.AvgPool2d(2,2)(I_high4)
+
+        loss4_h2l =  F.l1_loss(R_high4 * I_low4, L_low4)
+        loss8_h2l =  F.l1_loss(R_high8 * I_low8, L_low8)
+        loss4_l2h =  F.l1_loss(R_low4 * I_high4, L_high4)
+        loss8_l2h =  F.l1_loss(R_low8 * I_high8, L_high8)
+        recon_loss_cross = (loss4_h2l + loss4_l2h + 2*loss8_h2l + 2*loss8_l2h) / 3
+        
+        return recon_loss_high + recon_loss_low + recon_loss_cross*0.01
+
+    def forward(self, R_low, R_high, I_low, I_high, L_low, L_high, hook=-1):
         #network output
-        recon_loss = self.reconstruction_error(R_low, R_high, I_low_3, I_high_3, L_low, L_high)
+        recon_loss = self.reconstruction_error(R_low, R_high, I_low, I_high, L_low, L_high)
         equal_R_loss = self.reflectance_similarity(R_low, R_high)
         i_mutual_loss = self.mutual_consistency(I_low, I_high, hook=hook)
-        ilux_smooth_loss = self.illumination_smoothness(I_low, L_low, hook=hook) + \
-                    self.illumination_smoothness(I_high, L_high, name='high', hook=hook) 
+        # ilux_smooth_loss = self.illumination_smoothness(I_low, L_low, hook=hook) + \
+        #             self.illumination_smoothness(I_high, L_high, name='high', hook=hook) 
 
-        decom_loss = recon_loss + 0.009 * equal_R_loss + 0.2 * i_mutual_loss + 0.15 * ilux_smooth_loss
+        decom_loss = recon_loss + 0.01*equal_R_loss + 0.1 * i_mutual_loss# + 0.015 * ilux_smooth_loss
 
         return decom_loss
 
 
-class Illum_Loss(nn.Module):
+class Illum_Custom_Loss(nn.Module):
     def __init__(self):
         super().__init__()
     
-    def grad_loss(self, low, high, hook=-1):
+    def grad_loss(self, low, high):
         x_loss = F.l1_loss(gradient_no_abs(low, 'x'), gradient_no_abs(high, 'x'))
         y_loss = F.l1_loss(gradient_no_abs(low, 'y'), gradient_no_abs(high, 'y'))
         grad_loss_all = x_loss + y_loss
         return grad_loss_all
 
-    def forward(self, I_low, I_high, hook=-1):
-        loss_grad = self.grad_loss(I_low, I_high, hook=hook)
+    def gamma_loss(self, I_standard, I_high):
+        loss = F.l1_loss(I_high, I_standard)
+        return loss
+
+    def forward(self, I_low, I_high, I_standard):
+        loss_gamma = self.gamma_loss(I_standard, I_high)
+        loss_grad = self.grad_loss(I_low, I_high)
         loss_recon = F.l1_loss(I_low, I_high)
-        loss_adjust =  loss_recon + loss_grad
+        loss_adjust = loss_recon + loss_grad + loss_gamma*0.0001
         return loss_adjust
 
 
@@ -164,11 +218,19 @@ class Restore_Loss(nn.Module):
         grad_loss_all = x_loss + y_loss
         return grad_loss_all
 
-    def forward(self, R_low, R_high, hook=-1):
+    def loss(self, low, high):
+        loss_grad = self.grad_loss(low, high)
+        loss_recon = F.l1_loss(low, high)
+        loss_ssim = 1-self.ssim_loss(low, high)
+        return loss_recon + loss_ssim + loss_grad
+
+    def forward(self, R_low, R_high, L2,L4,L8,hook=-1):
+        H2,H4,H8 = Pyramid_Sample(R_high, max_scale=8)
+        loss_restore = self.loss(R_low, R_high)+self.loss(L2,H2)/2+self.loss(L4,H4)/4+self.loss(L8,H8)/8
         # loss_grad = self.grad_loss(R_low, R_high, hook=hook)
-        loss_recon = F.mse_loss(R_low, R_high)
-        loss_ssim = 1-self.ssim_loss(R_low, R_high)
-        loss_restore = loss_recon + loss_ssim #+ loss_grad
+        # loss_recon = F.l1_loss(R_low, R_high)
+        # loss_ssim = 1-self.ssim_loss(R_low, R_high)
+        # loss_restore = loss_recon + loss_ssim #+ loss_grad
         return loss_restore
 
 
@@ -202,15 +264,15 @@ if __name__ == "__main__":
     from torch.utils.data import DataLoader
     from torchvision.utils import make_grid
     from matplotlib import pyplot as plt
-    root_path_train = r'C:\DeepLearning\GitHub\MSRCR_Python\LOLtest'
-    list_path_train = build_LOLDataset_list_txt(root_path_train)
+    root_path_train = r'H:\datasets\Low-Light Dataset\LOLdataset_decom\eval15'
+    list_path_train = build_LOLDataset_Decom_list_txt(root_path_train)
     Batch_size = 1
     log("Buliding LOL Dataset...")
-    dst_test = LOLDataset(root_path_train, list_path_train, to_RAM=True, training=False)
+    dst_test = LOLDataset_Decom(root_path_train, list_path_train, to_RAM=True, training=False)
     # But when we are training a model, the mean should have another value
     testloader = DataLoader(dst_test, batch_size = Batch_size)
     for i, data in enumerate(testloader):
-        L_low, L_high, name = data
+        L_low, I_low, L_high, I_high, name = data
         L_low_2 = nn.AvgPool2d((2,2))(L_low)
         L_low_4 = nn.AvgPool2d((2,2))(L_low_2)
         L_low_8 = nn.AvgPool2d((2,2))(L_low_4)

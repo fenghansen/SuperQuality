@@ -121,7 +121,7 @@ class HSV_Trainer(BaseTrainer):
 
 if __name__ == "__main__":
     criterion = Unet_Loss()
-    model = Unet_mini(w_res=0.5)
+    model = Unet_HSV(w_res=0.5)
 
     parser = BaseParser()
     args = parser.parse()
