@@ -349,12 +349,13 @@ class KinD(nn.Module):
         self.restore_net = RestoreNet_Unet()
         self.illum_net = IllumNet_Custom()
     
-    def forward(self, L, ratio):
+    def forward(self, L, ratio, limit_highlight=True):
         R, I = self.decom_net(L)
         I_final, I_standard = self.illum_net(I, ratio)
         R_final = self.restore_net(R, I)
-        I_att = F.sigmoid((.5-I)*10)/0.99330
-        R_final = R + (R_final-R) * torch.cat([I_att, I_att, I_att], dim=1)
+        if limit_highlight:
+            I_att = F.sigmoid((.5-I)*10)/0.99330
+            R_final = R + (R_final-R) * torch.cat([I_att, I_att, I_att], dim=1)
         # I_final = I + (I_final-I) * (1-I/2)
         I_final_3 = torch.cat([I_final, I_final, I_final], dim=1)
         output = I_final_3 * R_final

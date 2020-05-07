@@ -43,7 +43,7 @@ class KinD_Player(BaseTrainer):
             # log(f"Brightness: {bright_high:.4f}\tIllumation Magnification: {ratio.item():.3f}")
             ratio = 1
             
-            R_final, I_final, output_final = self.model(L_low, ratio)
+            R_final, I_final, output_final = self.model(L_low, ratio, limit_highlight=False)
 
             output_final_np = output_final.detach().cpu().numpy()[0]
             L_low_np = L_low_tensor.numpy()[0]
@@ -77,7 +77,7 @@ class TestParser(BaseParser):
                                 help="Path of checkpoints")
         self.parser.add_argument("-i", "--input_dir", default="./images/inputs/", 
                                 help="Path of input pictures")
-        self.parser.add_argument("-o", "--output_dir", default="./images/outputs_adjust/", 
+        self.parser.add_argument("-o", "--output_dir", default="./images/outputs/", 
                                 help="Path of output pictures")
         self.parser.add_argument("-b", "--b_target", default=1.4, help="Target brightness")
         # self.parser.add_argument("-u", "--use_gpu", default=True, 
@@ -95,7 +95,7 @@ if __name__ == "__main__":
     plot_more = args.plot_more
     checkpoint = args.checkpoint
     decom_net_dir = os.path.join(checkpoint, "decom_net_normal.pth")
-    restore_net_dir = os.path.join(checkpoint, "restore_net_normal.pth")
+    restore_net_dir = os.path.join(checkpoint, "restore_net_6.pth")
     illum_net_dir = os.path.join(checkpoint, "illum_net_custom.pth")
     
     model.decom_net = load_weights(model.decom_net, path=decom_net_dir)
