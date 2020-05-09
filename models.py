@@ -253,6 +253,74 @@ class RestoreNet_Unet(nn.Module):
         else:
             return out
 
+class Restore_D_Single(nn.Module):
+    def __init__(self, filters=32, activation='lrelu'):
+        super().__init__()
+        if activation == 'relu':
+            self.relu = nn.ReLU()
+        else:
+            self.relu = nn.LeakyReLU(0.2)
+        self.conv1 = DoubleConv(3, filters, stride=2)
+        self.conv2 = DoubleConv(filters*1, filters*2, stride=2)
+        self.conv3 = DoubleConv(filters*2, filters*4, stride=2)
+        self.conv4 = DoubleConv(filters*4, filters*8, stride=2)
+        self.conv5 = DoubleConv(filters*8, filters*16) # [b, 512, 1/16, 1/16]
+        self.pool = nn.AdaptiveAvgPool2d(1)
+        self.dense = conv1x1(filters*16, filters*16)
+        self.dropout = nn.Dropout(0.4)
+        self.out = conv1x1(filters*16, 1)
+    
+    def forward(self, R):
+        conv1 = self.conv1(R)
+        conv2 = self.conv2(conv1)
+        conv3 = self.conv3(conv2)
+        conv4 = self.conv4(conv3)
+        conv5 = self.conv5(conv4)
+        dense = self.relu(self.dense(self.pool(conv5)))
+        d = self.dropout(dense)
+        out = self.out(d)
+        return out
+
+
+class Restore_D_Pyramid(nn.Module):
+    def __init__(self, filters=32, activation='lrelu'):
+        super().__init__()
+        if activation == 'relu':
+            self.relu = nn.ReLU()
+        else:
+            self.relu = nn.LeakyReLU(0.2)
+        self.conv1 = DoubleConv(3, filters, stride=2)
+        self.R2_in = conv1x1(3, filters)
+        self.conv2 = DoubleConv(filters*2, filters*2, stride=2)
+        self.R4_in = conv1x1(3, filters)
+        self.conv3 = DoubleConv(filters*3, filters*4, stride=2)
+        self.R8_in = conv1x1(3, filters)
+        self.conv4 = DoubleConv(filters*5, filters*8, stride=2)
+        self.conv5 = DoubleConv(filters*8, filters*16) # [b, 512, 1/16, 1/16]
+        self.pool = nn.AdaptiveAvgPool2d(1)
+        self.dense = conv1x1(filters*16, filters*16)
+        self.dropout = nn.Dropout(0.4)
+        self.out = conv1x1(filters*16, 1)
+    
+    def input_transfer(self, R_in, block, last_tensor):
+        Rx_in = block(R_in)
+        return torch.cat([Rx_in, last_tensor], dim=1)
+
+    def forward(self, R, R2, R4, R8):
+        conv1 = self.conv1(R)
+        conv2_in = self.input_transfer(R2, self.R2_in, conv1)
+        conv2 = self.conv2(conv2_in)
+        conv3_in = self.input_transfer(R4, self.R4_in, conv2)
+        conv3 = self.conv3(conv3_in)
+        conv4_in = self.input_transfer(R8, self.R8_in, conv3)
+        conv4 = self.conv4(conv4_in)
+        conv5 = self.conv5(conv4)
+        dense = self.relu(self.dense(self.pool(conv5)))
+        d = self.dropout(dense)
+        out = self.out(d)
+        return out
+
+
 class DnCNN(nn.Module):
     def __init__(self, in_channels, out_channels, dep=20, num_filters=64, slope=0.2):
         '''

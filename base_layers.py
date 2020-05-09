@@ -103,11 +103,11 @@ def conv1x1(in_chn, out_chn, bias=True):
 
 
 class DoubleConv(nn.Module):
-    def __init__(self, in_channels, out_channels, activation='lrelu'):
+    def __init__(self, in_channels, out_channels, activation='lrelu', stride=1):
         super().__init__()
         self.doubleconv = nn.Sequential(
             Conv2D(in_channels, out_channels, activation),
-            Conv2D(out_channels,out_channels, activation)
+            Conv2D(out_channels,out_channels, activation, stride=stride)
         )
 
     def forward(self, x):
