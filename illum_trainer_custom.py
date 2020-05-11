@@ -29,7 +29,7 @@ class Illum_Trainer(BaseTrainer):
         self.model.train()
         log(f'Using device {self.device}')
         self.model.to(device=self.device)
-        print(self.model)
+        self.model.I_standard.set_parameter(w=0.5, sigma=2.0)
         # summary(self.model, input_size=[(1, 384, 384), (1,)], batch_size=4)
 
         optimizer = torch.optim.Adam(self.model.parameters(), lr=self.learning_rate)
@@ -64,7 +64,7 @@ class Illum_Trainer(BaseTrainer):
                     self.test(iter, plot_dir='./images/samples-illum-custom')
 
                 if iter % self.save_frequency == 0:
-                    torch.save(self.model.state_dict(), f'./weights/illum_net_custom_{iter//100}.pth')
+                    torch.save(self.model.state_dict(), f'./weights/illum-custom/illum_net_custom_{iter//100}.pth')
                     log("Weight Has saved as 'illum_net.pth'")
                         
                 scheduler.step()
@@ -129,7 +129,7 @@ if __name__ == "__main__":
         if config['noDecom'] is False:
             decom_net = load_weights(decom_net, path='./weights/decom_net_normal.pth')
             log('DecomNet loaded from decom_net.pth')
-        model = load_weights(model, path='./weights/illum_net_custom_0.pth')
+        model = load_weights(model, path='./weights/illum_net_custom.pth')
         log('Model loaded from illum_net.pth')
 
     root_path_train = r'H:\datasets\Low-Light Dataset\KinD++\LOLdataset\our485'
@@ -152,7 +152,7 @@ if __name__ == "__main__":
     trainer = Illum_Trainer(config, train_loader, criterion, model, 
                             dataloader_test=test_loader, decom_net=decom_net)
 
-    if args.mode == 'train':
+    if args.mode == 'test':
         trainer.train()
     else:
-        trainer.test()
+        trainer.test(epoch=0)

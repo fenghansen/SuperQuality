@@ -24,26 +24,16 @@ class KinD_Player(BaseTrainer):
         self.model.to(device=self.device)
 
     @no_grad
-    def test(self, target_b=0.70, plot_dir='./images/samples-KinD'):
+    def test(self, ratio=1.4, plot_dir='./images/samples-KinD'):
         self.model.eval()
         self.model.to(device=self.device)
         for L_low_tensor, name in self.dataloader_test:
             L_low = L_low_tensor.to(self.device)
 
             if self.plot_more:
-                # Use DecomNet to decomposite Reflectance Map and Illumation Map
                 R_low, I_low = self.model.decom_net(L_low)
-            #     # Compute brightness ratio
-            #     bright_low = torch.mean(I_low)
-            # else:
-            #     bright_low = torch.mean(L_low)
             
-            # bright_high = torch.ones_like(bright_low) * target_b + 0.5 * bright_low
-            # ratio = torch.div(bright_high, bright_low)
-            # log(f"Brightness: {bright_high:.4f}\tIllumation Magnification: {ratio.item():.3f}")
-            ratio = 1
-            
-            R_final, I_final, output_final = self.model(L_low, ratio, limit_highlight=False)
+            R_final, I_final, output_final = self.model(L_low, ratio, limit_highlight=True)
 
             output_final_np = output_final.detach().cpu().numpy()[0]
             L_low_np = L_low_tensor.numpy()[0]
@@ -77,9 +67,9 @@ class TestParser(BaseParser):
                                 help="Path of checkpoints")
         self.parser.add_argument("-i", "--input_dir", default="./images/inputs/", 
                                 help="Path of input pictures")
-        self.parser.add_argument("-o", "--output_dir", default="./images/outputs/", 
+        self.parser.add_argument("-o", "--output_dir", default="./images/outputs-GAN/", 
                                 help="Path of output pictures")
-        self.parser.add_argument("-b", "--b_target", default=1.4, help="Target brightness")
+        self.parser.add_argument("-r", "--ratio", default=1, help="Target brightness")
         # self.parser.add_argument("-u", "--use_gpu", default=True, 
         #                         help="If you want to use GPU to accelerate")
         return self.parser.parse_args()
@@ -95,7 +85,7 @@ if __name__ == "__main__":
     plot_more = args.plot_more
     checkpoint = args.checkpoint
     decom_net_dir = os.path.join(checkpoint, "decom_net_normal.pth")
-    restore_net_dir = os.path.join(checkpoint, "restore_net_6.pth")
+    restore_net_dir = os.path.join(checkpoint, "restore_GAN_1.pth")
     illum_net_dir = os.path.join(checkpoint, "illum_net_custom.pth")
     
     model.decom_net = load_weights(model.decom_net, path=decom_net_dir)
@@ -112,4 +102,4 @@ if __name__ == "__main__":
 
     KinD = KinD_Player(model, dataloader, plot_more=plot_more)
     
-    KinD.test(plot_dir=output_dir, target_b=args.b_target)
+    KinD.test(plot_dir=output_dir, ratio=args.ratio)

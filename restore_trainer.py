@@ -61,10 +61,10 @@ class Restore_Trainer(BaseTrainer):
                     idx += 1
 
                 if iter % self.print_frequency == 0:
-                    self.test(iter, plot_dir='./images/samples-restore')
+                    self.test(iter, plot_dir='./images/samples-restore-att')
 
                 if iter % self.save_frequency == 0:
-                    torch.save(self.model.state_dict(), f'./weights/restore_net_{iter//100}.pth')
+                    torch.save(self.model.state_dict(), f'./weights/restore-att/restore_att_{iter//100}.pth')
                     log("Weight Has saved as 'restore_net.pth'")
                 
                 scheduler.step()

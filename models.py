@@ -87,7 +87,7 @@ class Standard_Illum(nn.Module):
     def forward(self, I, ratio):
         # if blur: # low light image have much noisy 
         #     I = torch.nn.functional.conv2d(I, weight=self.Gauss_kernel, padding=1)
-        I = torch.log(I + 1.)
+        # I = torch.log(I + 1.)
         I_mean = torch.mean(I, dim=[2, 3], keepdim=True)
         I_std = torch.std(I, dim=[2, 3], keepdim=True)
         I_min = I_mean - self.sigma * I_std
@@ -95,7 +95,7 @@ class Standard_Illum(nn.Module):
         I_range = I_max - I_min
         I_out = torch.clamp((I - I_min) / I_range, min=0.0, max=1.0)
         # Transfer to gamma correction, center intensity is w
-        I_out = I_out ** (-1.442695 * torch.log(self.w))
+        I_out = I_out ** (-1.442695 * torch.log(self.w*ratio))
         return I_out
 
 
@@ -156,16 +156,37 @@ class IllumNet_Custom(nn.Module):
 
         return I_out, I_standard
 
+class Illum_D(nn.Module):
+    def __init__(self, filters=16, activation='lrelu'):
+        super().__init__()
+        if activation == 'relu':
+            self.relu = nn.ReLU()
+        else:
+            self.relu = nn.LeakyReLU(0.2)
+        self.conv1 = DoubleConv(1, filters, stride=2)
+        self.conv2 = DoubleConv(filters*1, filters*2, stride=2)
+        self.conv3 = DoubleConv(filters*2, filters*4, stride=2)
+        self.conv4 = DoubleConv(filters*4, filters*8, stride=2)
+        self.conv5 = DoubleConv(filters*8, filters*8) # [b, 512, 1/16, 1/16]
+        self.pool = nn.AdaptiveAvgPool2d(1)
+        self.dense = conv1x1(filters*8, filters*8)
+        self.dropout = nn.Dropout(0.4)
+        self.out = conv1x1(filters*8, 1)
+    
+    def forward(self, R):
+        conv1 = self.conv1(R)
+        conv2 = self.conv2(conv1)
+        conv3 = self.conv3(conv2)
+        conv4 = self.conv4(conv3)
+        conv5 = self.conv5(conv4)
+        dense = self.relu(self.dense(self.pool(conv5)))
+        d = self.dropout(dense)
+        out = self.out(d)
+        return out
 
 class RestoreNet_Unet(nn.Module):
     def __init__(self, filters=32, activation='lrelu'):
         super().__init__()
-        # Build Soft Attention Map from Illumination Map
-        self.I_att = nn.Sequential(
-            nn.Conv2d(1, 1, kernel_size=3, padding=1),
-            nn.Sigmoid()
-        )
-        # self.w = nn.Parameter(torch.tensor(w_res, requires_grad=False, device='cuda'))
         self.conv1 = DoubleConv(5, filters)
         self.pool1 = MaxPooling2D()
         
@@ -422,7 +443,7 @@ class KinD(nn.Module):
         I_final, I_standard = self.illum_net(I, ratio)
         R_final = self.restore_net(R, I)
         if limit_highlight:
-            I_att = F.sigmoid((.5-I)*10)/0.99330
+            I_att = torch.clamp(F.sigmoid((.5-I)*10)/0.99330, min=0.2, max=1.0)
             R_final = R + (R_final-R) * torch.cat([I_att, I_att, I_att], dim=1)
         # I_final = I + (I_final-I) * (1-I/2)
         I_final_3 = torch.cat([I_final, I_final, I_final], dim=1)

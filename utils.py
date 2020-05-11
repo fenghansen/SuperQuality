@@ -9,6 +9,7 @@ import torch
 import torchvision
 import shutil
 import time
+from skimage.measure import compare_psnr, compare_ssim
 
 def log(string):
     print(time.strftime('%H:%M:%S'), ">> ", string)

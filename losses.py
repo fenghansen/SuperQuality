@@ -259,6 +259,56 @@ class Unet_Loss(nn.Module):
         return loss_restore
 
 
+class GAN_Loss(nn.Module):
+    def __init__(self, mode='RaSGAN'):
+        super().__init__()
+        self.gan_mode = mode
+    
+    def forward(self, D_real, D_fake, D_fake_for_G):
+        y_ones = torch.ones_like(D_real)
+        y_zeros = torch.zeros_like(D_fake)
+
+        if self.gan_mode == 'RSGAN':
+            ### Relativistic Standard GAN
+            BCE_stable = torch.nn.BCEWithLogitsLoss()
+            # Discriminator loss
+            errD = BCE_stable(D_real - D_fake, y_ones)
+            loss_D = torch.mean(errD)
+            # Generator loss
+            errG = BCE_stable(D_fake_for_G - D_real, y_ones)
+            loss_G = torch.mean(errG)
+        elif self.gan_mode == 'SGAN':
+            criterion = torch.nn.BCEWithLogitsLoss()
+            # Real data Discriminator loss
+            errD_real = criterion(D_real, y_ones)
+            # Fake data Discriminator loss
+            errD_fake = criterion(D_fake, y_zeros)
+            loss_D = torch.mean(errD_real + errD_fake) / 2
+            # Generator loss
+            errG = criterion(D_fake_for_G, y_ones)
+            loss_G = torch.mean(errG)
+        elif self.gan_mode == 'RaSGAN':
+            BCE_stable = torch.nn.BCEWithLogitsLoss()
+            # Discriminator loss
+            errD = (BCE_stable(D_real - torch.mean(D_fake), y_ones) + 
+                    BCE_stable(D_fake - torch.mean(D_real), y_zeros))/2
+            loss_D = torch.mean(errD)
+            # Generator loss
+            errG = (BCE_stable(D_real - torch.mean(D_fake), y_zeros) + 
+                    BCE_stable(D_fake - torch.mean(D_real), y_ones))/2
+            loss_G = torch.mean(errG)
+        elif self.gan_mode == 'RaLSGAN':
+            # Discriminator loss
+            errD = (torch.mean((D_real - torch.mean(D_fake) - y_ones) ** 2) + 
+                    torch.mean((D_fake - torch.mean(D_real) + y_ones) ** 2))/2
+            loss_D = errD
+            # Generator loss (You may want to resample again from real and fake data)
+            errG = (torch.mean((D_real - torch.mean(D_fake) + y_ones) ** 2) + 
+                    torch.mean((D_fake - torch.mean(D_real) - y_ones) ** 2))/2
+            loss_G = errG
+        
+        return loss_D, loss_G
+
 if __name__ == "__main__":
     from dataloader import *
     from torch.utils.data import DataLoader
