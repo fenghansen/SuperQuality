@@ -28,12 +28,11 @@ class Decom_Trainer(BaseTrainer):
         scheduler = lr_scheduler.ExponentialLR(optimizer, gamma=0.9984)
         try:
             for iter in range(self.epochs):
-                epoch_loss = 0
                 idx = 0
                 hook_number = -1
                 iter_start_time = time.time()
                 gpu_time = 0
-                # with tqdm(total=self.steps_per_epoch) as pbar:
+
                 for L_low_tensor, L_high_tensor, name in self.dataloader:
                     L_low = L_low_tensor.to(self.device)
                     L_high = L_high_tensor.to(self.device)
@@ -44,21 +43,19 @@ class Decom_Trainer(BaseTrainer):
                         hook_number = -1
                     loss = self.loss_fn(R_low, R_high, I_low, I_high, L_low, L_high, hook=hook_number)
                     hook_number = -1
-                    if idx % 8 == 0:
+                    if idx % 10 == 0:
                         print(f"iter: {iter}_{idx}\taverage_loss: {loss.item():.6f}")
                     optimizer.zero_grad()
                     loss.backward()
                     optimizer.step()
                     idx += 1
                     gpu_time += time.time()-gpu_time_iter 
-                    # pbar.update(1)
-                    # pbar.set_postfix({'loss':loss.item()})
 
                 if iter % self.print_frequency == 0:
-                    self.test(iter, plot_dir='./images/samples-decom')
+                    self.test(iter, plot_dir='./images/samples-decom-SID2')
 
                 if iter % self.save_frequency == 0:
-                    torch.save(self.model.state_dict(), f'./weights/decom_net_{iter//100}.pth')
+                    torch.save(self.model.state_dict(), f'./weights/decom-SID/decom_net_{iter//100}.pth')
                     log("Weight Has saved as 'decom_net.pth'")
                         
                 scheduler.step()
@@ -108,14 +105,14 @@ if __name__ == "__main__":
     args = parser.parse()
     args.checkpoint = True
     if args.checkpoint is not None:
-        model = load_weights(model, path='./weights/decom_net.pth')
+        model = load_weights(model, path='./weights/decom-SID/decom_net_1.pth')
         print('Model loaded from decom_net.pth')
 
     with open(args.config) as f:
         config = yaml.load(f)
 
-    root_path_train = r'H:\datasets\Low-Light Dataset\KinD++\LOLdataset\our485'
-    root_path_test = r'C:\DeepLearning\KinD_plus-master\LOLdataset\eval15'
+    root_path_train = r'H:\datasets\SID\train'
+    root_path_test = r'H:\datasets\SID\real_val'
     list_path_train = build_LOLDataset_list_txt(root_path_train)
     list_path_test = build_LOLDataset_list_txt(root_path_test)
     # list_path_train = os.path.join(root_path_train, 'pair_list.csv')
@@ -136,4 +133,4 @@ if __name__ == "__main__":
     if args.mode == 'train':
         trainer.train()
     else:
-        trainer.test()
+        trainer.test(plot_dir='./images/samples-decom-SID')

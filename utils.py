@@ -11,8 +11,12 @@ import shutil
 import time
 from skimage.measure import compare_psnr, compare_ssim
 
-def log(string):
-    print(time.strftime('%H:%M:%S'), ">> ", string)
+def log(string, log=None):
+    log_string = f'{time.strftime("%H:%M:%S")} >>  {string}'
+    print(log_string)
+    # if log is not None:
+    #     with open(log,'a+') as f:
+    #         f.write(log_string+'\n')
 
 def data_augmentation(image, mode):
     if mode == 0:
@@ -250,7 +254,7 @@ def hsv2rgb(img, dim=0):
     return img_rgb
 
 
-def sample(imgs, split=None ,figure_size=(2, 3), img_dim=(400, 600), path=None, num=0):
+def sample(imgs, split=None ,figure_size=(2, 3), img_dim=(400, 600), path=None, num=0, metrics=False):
     if type(img_dim) is int:
         img_dim = (img_dim, img_dim)
     img_dim = tuple(img_dim)
@@ -266,6 +270,8 @@ def sample(imgs, split=None ,figure_size=(2, 3), img_dim=(400, 600), path=None, 
         split = list(range(0, len(imgs)+1, gap))
     figure = np.zeros((h_dim*h, w_dim*w, 3))
     for i in range(h):
+        if metrics:
+            img_hr = imgs[ split[i*w+w-1] : split[i*w+w] ].transpose(1,2,0)
         for j in range(w):
             idx = i*w+j
             if idx >= len(split)-1: break
@@ -278,6 +284,21 @@ def sample(imgs, split=None ,figure_size=(2, 3), img_dim=(400, 600), path=None, 
                 for k in range(3):
                     figure[i*h_dim: (i+1)*h_dim,
                         j*w_dim: (j+1)*w_dim, k] = digit[2-k]
+            if metrics:
+                if j < w-1: 
+                    img_lr = digit.transpose(1,2,0)
+                    psnr = compare_psnr(img_hr, img_lr)
+                    ssim = compare_ssim(img_hr, img_lr, multichannel=True)
+                    text = f'psnr:{psnr:.4f} - ssim:{ssim:.4f}'
+                    log(text, log='./logs.txt')
+                    font = cv2.FONT_HERSHEY_COMPLEX_SMALL
+                    cv2.putText(figure, text, (j*w_dim, i*h_dim+20), font, 1, (255,255,255))
+                else: 
+                    text = 'reference'
+                    log(text)
+                    font = cv2.FONT_HERSHEY_COMPLEX_SMALL
+                    cv2.putText(figure, text, (j*w_dim, i*h_dim+20), font, 1, (255,255,255))
+
     if path is None:
         cv2.imshow('Figure%d'%num, figure)
         cv2.waitKey()
@@ -292,5 +313,6 @@ def sample(imgs, split=None ,figure_size=(2, 3), img_dim=(400, 600), path=None, 
         root_path = path[:-len(filename)]
         if not os.path.exists(root_path):
             os.makedirs(root_path)
-        log("Saving Image at {}".format(path))
+        log("Saving Image at {}".format(path), log='./logs.txt')
         cv2.imwrite(path, figure)
+    

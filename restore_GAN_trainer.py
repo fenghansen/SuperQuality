@@ -36,10 +36,11 @@ class Restore_GAN_Trainer(BaseTrainer):
 
         optimizer = torch.optim.Adam(self.model.parameters(), lr=self.learning_rate)
         optimizer_D = torch.optim.Adam(self.D.parameters(), lr=self.learning_rate)
-        scheduler = lr_scheduler.ExponentialLR(optimizer, gamma=0.9984) #0.977237, 0.986233
-        scheduler_D = lr_scheduler.ExponentialLR(optimizer_D, gamma=0.9984) #0.977237, 0.986233
+        scheduler = lr_scheduler.ExponentialLR(optimizer, gamma=0.997) #0.977237, 0.986233
+        scheduler_D = lr_scheduler.ExponentialLR(optimizer_D, gamma=0.997) #0.977237, 0.986233
         try:
             for iter in range(self.epochs):
+                self.model.train()
                 idx = 0
                 iter_start_time = time.time()
                 gpu_time = 0
@@ -71,7 +72,7 @@ class Restore_GAN_Trainer(BaseTrainer):
                     D_fake_for_G = self.D(R_restore,R2,R4,R8)
                     loss_D, loss_G = self.GAN_Loss(D_real, D_fake, D_fake_for_G)
                     loss_average_D += loss_D.item()
-                    loss_G += recon_loss
+                    loss_G += recon_loss * 0.01
                     loss_average_G += loss_G.item()
 
                     if idx % loss_frequency == loss_frequency-1:
@@ -93,13 +94,13 @@ class Restore_GAN_Trainer(BaseTrainer):
                     idx += 1
 
                 if iter % self.print_frequency == 0:
-                    self.test(iter, plot_dir='./images/samples-restore-gan-pyramid')
+                    self.test(iter, plot_dir='./images/samples-restore-gan-pyramid-mask')
 
                 if iter % self.save_frequency == 0:
                     # self.ema_G.apply_shadow()
                     # self.ema_D.apply_shadow()
-                    torch.save(self.model.state_dict(), f'./weights/restore-GAN-pyramid/restore_GAN_{iter//100}.pth')
-                    torch.save(self.D.state_dict(), f'./weights/restore-GAN-pyramid/D_pyramid_{iter//100}.pth')
+                    torch.save(self.model.state_dict(), f'./weights/restore-GAN-pyramid/restore_GAN_mask_{iter//100}.pth')
+                    torch.save(self.D.state_dict(), f'./weights/restore-GAN-pyramid/D_pyramid_mask_{iter//100}.pth')
                     log("Weight Has saved as 'restore_GAN.pth'")
                     # eval之后，恢复原来模型的参数
                     # self.ema_G.restore()
@@ -135,24 +136,25 @@ class Restore_GAN_Trainer(BaseTrainer):
 
             L_output_np = L_output.detach().cpu().numpy()[0]
             R_restore_np = R_restore.detach().cpu().numpy()[0]
-            I_low_np = I_low.detach().cpu().numpy()[0]
+            # I_low_np = I_low.detach().cpu().numpy()[0]
             R_low_np = R_low.detach().cpu().numpy()[0]
             R_high_np = R_high.detach().cpu().numpy()[0]
             L_high_np = L_high_tensor.numpy()[0]
+            L_low_np = L_low_tensor.numpy()[0]
 
-            sample_imgs = np.concatenate((R_low_np, R_restore_np, R_high_np, 1-I_low_np, L_output_np, L_high_np), axis=0 )
+            sample_imgs = np.concatenate((R_low_np, R_restore_np, R_high_np, L_low_np, L_output_np, L_high_np), axis=0 )
             
             filepath = os.path.join(plot_dir, f'{name[0]}_epoch_{epoch//100}.png')
-            split_point = [0, 3, 6, 9, 10, 13, 16]
+            split_point = None#[0, 3, 6, 9, 10, 13, 16]
             img_dim = L_high_np.shape[1:]
             sample(sample_imgs, split=split_point, figure_size=(2, 3), 
-                        img_dim=img_dim, path=filepath, num=epoch)
+                        img_dim=img_dim, path=filepath, num=epoch, metrics=True)
         # eval之后，恢复原来模型的参数
         # self.ema_G.restore()
 
 if __name__ == "__main__":
     criterion = Restore_Loss()
-    model = RestoreNet_Unet()
+    model = RestoreNet_Unet(use_MaskMul=True)
     decom_net = DecomNet()
     discriminator = Restore_D_Pyramid()
 
@@ -164,11 +166,11 @@ if __name__ == "__main__":
     args.checkpoint = True
 
     if args.checkpoint is not None:
-        discriminator = load_weights(discriminator, path='./weights/restore-GAN-pyramid/D_pyramid_0.pth')
+        discriminator = load_weights(discriminator, path='./weights/restore-GAN-pyramid/D_pyramid_mask_3.pth')
         log('Discriminator loaded from D_pyramid.pth')
         decom_net = load_weights(decom_net, path='./weights/decom_net_normal.pth')
         log('DecomNet loaded from decom_net.pth')
-        model = load_weights(model, path='./weights/restore-GAN-pyramid/restore_GAN_0.pth')
+        model = load_weights(model, path='./weights/restore-GAN-pyramid/restore_GAN_mask_0.pth')
         log('Model loaded from restore_net.pth')
 
     root_path_train = r'H:\datasets\Low-Light Dataset\KinD++\LOLdataset\our485'
@@ -181,7 +183,7 @@ if __name__ == "__main__":
     log("Buliding LOL Dataset...")
     # transform = transforms.Compose([transforms.ToTensor()])
     dst_train = LOLDataset(root_path_train, list_path_train,
-                            crop_size=config['length'], to_RAM=True)
+                            crop_size=config['length'], to_RAM=False)
     dst_test = LOLDataset(root_path_test, list_path_test,
                             crop_size=config['length'], to_RAM=True, training=False)
 
@@ -195,4 +197,4 @@ if __name__ == "__main__":
     if args.mode == 'train':
         trainer.train()
     else:
-        trainer.test()
+        trainer.test(plot_dir='./images/samples-restore-gan-pyramid')

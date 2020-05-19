@@ -98,12 +98,68 @@ class Standard_Illum(nn.Module):
         I_out = I_out ** (-1.442695 * torch.log(self.w*ratio))
         return I_out
 
-
 class IllumNet_Custom(nn.Module):
-    def __init__(self, filters=16):
+    def __init__(self, filters=16, w=0.5, sigma=2.0):
         super().__init__()
         self.concat_input = Concat()
-        self.I_standard = Standard_Illum(w=0.5, sigma=2.0)
+        self.I_standard = Standard_Illum(w=w, sigma=sigma)
+        self.I_standard.set_parameter() # 先锁住
+
+        # bottom path build Illumination map
+        self.conv_input = nn.Sequential(
+            nn.Conv2d(3, filters, kernel_size=1, padding=0),
+            nn.LeakyReLU(0.2)
+        )
+        self.res_block1 = ResConv(filters, filters)
+        self.ca1 = ChannelAttention(filters*2)
+        self.bottleneck1 = conv1x1(filters*2, filters)
+        self.res_block2 = ResConv(filters, filters)
+        self.ca2 = ChannelAttention(filters*2)
+        self.bottleneck2 = conv1x1(filters*2, filters)
+        self.res_block3 = ResConv(filters, filters)
+        self.ca3 = ChannelAttention(filters*2)
+        self.bottleneck3 = conv1x1(filters*2, filters)
+        self.conv_out = nn.Conv2d(filters*1, 1, kernel_size=1, padding=0)
+
+        self.fusion = conv1x1(2,1,bias=False)
+        self.I_out = nn.Sigmoid()
+
+    def forward(self, I, ratio):
+        I_Att = 1-I
+        with torch.no_grad():
+            I_standard = self.I_standard(I, ratio)
+        concat_input = torch.cat([I, I_standard, I_Att], dim=1)
+        # build Illumination map
+        conv_input = self.conv_input(concat_input)
+
+        res_block1 = self.res_block1(conv_input)
+        res_concat1 = torch.cat([res_block1, MaskMul(1)(res_block1, I_Att)], dim=1)
+        ca1 = res_concat1 * self.ca1(res_concat1)
+        bottleneck1 = self.bottleneck1(ca1)
+
+        res_block2 = self.res_block2(bottleneck1)
+        res_concat2 = torch.cat([res_block2, MaskMul(1)(res_block2, I_Att)], dim=1)
+        ca2 = res_concat2 * self.ca2(res_concat2)
+        bottleneck2 = self.bottleneck2(ca2)
+
+        res_block3 = self.res_block3(bottleneck2)
+        res_out = res_block3 + conv_input
+
+        res_concat3 = torch.cat([res_block3, MaskMul(1)(res_out, I_Att)], dim=1)
+        ca3 = res_concat3 * self.ca3(res_concat3)
+        bottleneck3 = self.bottleneck3(ca3)
+
+        conv_out = self.conv_out(bottleneck3)
+        fusion = self.fusion(torch.cat([conv_out, I_standard],dim=1))
+        I_out = self.I_out(fusion)
+
+        return I_out, I_standard
+
+class IllumNet_Custom(nn.Module):
+    def __init__(self, filters=16, w=0.5, sigma=2.0):
+        super().__init__()
+        self.concat_input = Concat()
+        self.I_standard = Standard_Illum(w=w, sigma=sigma)
         self.I_standard.set_parameter() # 先锁住
 
         # bottom path build Illumination map
@@ -185,8 +241,10 @@ class Illum_D(nn.Module):
         return out
 
 class RestoreNet_Unet(nn.Module):
-    def __init__(self, filters=32, activation='lrelu'):
+    def __init__(self, filters=32, activation='lrelu', use_MaskMul=False):
         super().__init__()
+        self.use_MaskMul = use_MaskMul
+
         self.conv1 = DoubleConv(5, filters)
         self.pool1 = MaxPooling2D()
         
@@ -241,31 +299,35 @@ class RestoreNet_Unet(nn.Module):
         d = self.dropout(conv5)
 
         up6 = self.upv6(d)
-        # conv4 = MaskMul(8)(conv4, I_att)
+        if self.use_MaskMul:
+            conv4 = MaskMul(8)(conv4, I_att)
         up6 = self.concat6(conv4, up6)
         up6 = self.ca6(up6) * up6
         conv6 = self.conv6(up6)
 
         up7 = self.upv7(conv6)
-        # conv3 = MaskMul(4)(conv3, I_att)
+        if self.use_MaskMul:
+            conv3 = MaskMul(4)(conv3, I_att)
         up7 = self.concat7(conv3, up7)
         up7 = self.ca7(up7) * up7
         conv7 = self.conv7(up7)
 
         up8 = self.upv8(conv7)
-        # conv2 = MaskMul(2)(conv2, I_att)
+        if self.use_MaskMul:
+            conv2 = MaskMul(2)(conv2, I_att)
         up8 = self.concat8(conv2, up8)
         up8 = self.ca8(up8) * up8
         conv8 = self.conv8(up8)
 
         up9 = self.upv9(conv8)
-        # conv1 = MaskMul(1)(conv1, I_att)
+        if self.use_MaskMul:
+            conv1 = MaskMul(1)(conv1, I_att)
         up9 = self.concat9(conv1, up9)
         up9 = self.ca9(up9) * up9
         conv9 = self.conv9(up9)
         
         out = self.conv10(conv9)
-        # out.clamp_(min=0.0, max=1.0)
+        
         if mode == 'train':
             out8 = self.out8(conv6)
             out4 = self.out4(conv7)
@@ -273,6 +335,7 @@ class RestoreNet_Unet(nn.Module):
             return out, out2, out4, out8
         else:
             return out
+
 
 class Restore_D_Single(nn.Module):
     def __init__(self, filters=32, activation='lrelu'):
@@ -339,6 +402,91 @@ class Restore_D_Pyramid(nn.Module):
         dense = self.relu(self.dense(self.pool(conv5)))
         d = self.dropout(dense)
         out = self.out(d)
+        return out
+
+
+class DenoiseNet(nn.Module):
+    def __init__(self, filters=32, activation='lrelu'):
+        super().__init__()
+        self.conv1 = DoubleConv(3, filters)
+        self.pool1 = MaxPooling2D()
+        
+        self.conv2 = DoubleConv(filters, filters*2)
+        self.pool2 = MaxPooling2D()
+        
+        self.conv3 = DoubleConv(filters*2, filters*4)
+        self.pool3 = MaxPooling2D()
+        
+        self.conv4 = DoubleConv(filters*4, filters*8)
+        self.pool4 = MaxPooling2D()
+        
+        self.conv5 = DoubleConv(filters*8, filters*16)
+        self.dropout = nn.Dropout2d(0.5)
+
+        self.upv6 = Up(filters*16, filters*8, mode='biliner')
+        self.concat6 = Concat()
+        # self.ca6 = ChannelAttention(filters*16)
+        self.conv6 = DoubleConv(filters*16, filters*8)
+        
+        self.upv7 = Up(filters*8, filters*4, mode='biliner')
+        self.concat7 = Concat()
+        # self.ca7 = ChannelAttention(filters*8)
+        self.conv7 = DoubleConv(filters*8, filters*4)
+        
+        self.upv8 = Up(filters*4, filters*2, mode='biliner')
+        self.concat8 = Concat()
+        # self.ca8 = ChannelAttention(filters*4)
+        self.conv8 = DoubleConv(filters*4, filters*2)
+        
+        self.upv9 = Up(filters*2, filters*1, mode='biliner')
+        self.concat9 = Concat()
+        # self.ca9 = ChannelAttention(filters*2)
+        self.conv9 = DoubleConv(filters*2, filters)
+        
+        self.conv10 = nn.Conv2d(filters, 3, kernel_size=1)
+        # self.out = nn.Sigmoid()
+        # Deep Supervision
+        # self.out8 = nn.Conv2d(filters*8, 3, kernel_size=1)
+        # self.out4 = nn.Conv2d(filters*4, 3, kernel_size=1)
+        # self.out2 = nn.Conv2d(filters*2, 3, kernel_size=1)
+    
+    def forward(self, x, mode='test'):
+        conv1 = self.conv1(x)
+        conv2 = self.conv2(self.pool1(conv1))        
+        conv3 = self.conv3(self.pool2(conv2))
+        conv4 = self.conv4(self.pool3(conv3))
+        conv5 = self.conv5(self.pool4(conv4))
+        
+        d = self.dropout(conv5)
+
+        up6 = self.upv6(d)
+        up6 = self.concat6(conv4, up6)
+        # up6 = self.ca6(up6) * up6
+        conv6 = self.conv6(up6)
+
+        up7 = self.upv7(conv6)
+        up7 = self.concat7(conv3, up7)
+        # up7 = self.ca7(up7) * up7
+        conv7 = self.conv7(up7)
+
+        up8 = self.upv8(conv7)
+        up8 = self.concat8(conv2, up8)
+        # up8 = self.ca8(up8) * up8
+        conv8 = self.conv8(up8)
+
+        up9 = self.upv9(conv8)
+        up9 = self.concat9(conv1, up9)
+        # up9 = self.ca9(up9) * up9
+        conv9 = self.conv9(up9)
+        
+        out = self.conv10(conv9)
+        
+        # if mode == 'train':
+        #     out8 = self.out8(conv6)
+        #     out4 = self.out4(conv7)
+        #     out2 = self.out2(conv8)
+        #     return out, out2, out4, out8
+        # else:
         return out
 
 
@@ -432,10 +580,10 @@ class KinD_noDecom(nn.Module):
 
 
 class KinD(nn.Module):
-    def __init__(self, filters=32, activation='lrelu'):
+    def __init__(self, filters=32, activation='lrelu', use_MaskMul=False):
         super().__init__()
         self.decom_net = DecomNet()
-        self.restore_net = RestoreNet_Unet()
+        self.restore_net = RestoreNet_Unet(use_MaskMul=use_MaskMul)
         self.illum_net = IllumNet_Custom()
     
     def forward(self, L, ratio, limit_highlight=True):

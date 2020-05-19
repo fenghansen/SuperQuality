@@ -140,7 +140,7 @@ class Illum_Trainer(BaseTrainer):
 if __name__ == "__main__":
     criterion = Illum_Custom_Loss()
     decom_net = DecomNet()
-    model = IllumNet_Custom()
+    model = IllumNet_Custom(sigma=1.0)
     discriminator = Illum_D()
 
     parser = BaseParser()
@@ -151,11 +151,11 @@ if __name__ == "__main__":
 
     args.checkpoint = True
     if args.checkpoint is not None:
-        discriminator = load_weights(discriminator, path='./weights/illum_GAN/illum_D_0.pth')
+        discriminator = load_weights(discriminator, path='./weights/illum-GAN/illum_D_1.pth')
         log('Discriminator loaded from D_pyramid.pth')
         decom_net = load_weights(decom_net, path='./weights/decom_net_normal.pth')
         log('DecomNet loaded from decom_net.pth')
-        model = load_weights(model, path='./weights/illum-GAN/illum_GAN_0.pth')
+        model = load_weights(model, path='./weights/illum-GAN/illum_GAN_1.pth')
         log('Model loaded from illum_net.pth')
 
     root_path_train = r'H:\datasets\Low-Light Dataset\KinD++\LOLdataset\our485'

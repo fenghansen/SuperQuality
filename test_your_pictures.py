@@ -29,11 +29,11 @@ class KinD_Player(BaseTrainer):
         self.model.to(device=self.device)
         for L_low_tensor, name in self.dataloader_test:
             L_low = L_low_tensor.to(self.device)
-
-            if self.plot_more:
-                R_low, I_low = self.model.decom_net(L_low)
-            
-            R_final, I_final, output_final = self.model(L_low, ratio, limit_highlight=True)
+            with torch.no_grad():
+                if self.plot_more:
+                    R_low, I_low = self.model.decom_net(L_low)
+                
+                R_final, I_final, output_final = self.model(L_low, ratio, limit_highlight=True)
 
             output_final_np = output_final.detach().cpu().numpy()[0]
             L_low_np = L_low_tensor.numpy()[0]
@@ -67,7 +67,7 @@ class TestParser(BaseParser):
                                 help="Path of checkpoints")
         self.parser.add_argument("-i", "--input_dir", default="./images/inputs/", 
                                 help="Path of input pictures")
-        self.parser.add_argument("-o", "--output_dir", default="./images/outputs-GAN/", 
+        self.parser.add_argument("-o", "--output_dir", default="./images/outputs/", 
                                 help="Path of output pictures")
         self.parser.add_argument("-r", "--ratio", default=1, help="Target brightness")
         # self.parser.add_argument("-u", "--use_gpu", default=True, 
@@ -76,7 +76,7 @@ class TestParser(BaseParser):
 
 
 if __name__ == "__main__":
-    model = KinD()
+    model = KinD(use_MaskMul=True)
     parser = TestParser()
     args = parser.parse()
 
@@ -85,7 +85,7 @@ if __name__ == "__main__":
     plot_more = args.plot_more
     checkpoint = args.checkpoint
     decom_net_dir = os.path.join(checkpoint, "decom_net_normal.pth")
-    restore_net_dir = os.path.join(checkpoint, "restore_GAN_1.pth")
+    restore_net_dir = os.path.join(checkpoint, "restore_GAN_mask.pth")
     illum_net_dir = os.path.join(checkpoint, "illum_net_custom.pth")
     
     model.decom_net = load_weights(model.decom_net, path=decom_net_dir)

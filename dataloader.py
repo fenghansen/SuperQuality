@@ -14,6 +14,21 @@ from torch.utils.data import Dataset, DataLoader
 import pytorch_colors as colors
 from utils import *
 
+class crops_reshape():
+    def __init__(self, dataloader):
+        self.dataloader = dataloader
+
+    def __iter__(self):
+        return self
+
+    def reshape(self, tensor):
+        size = tensor.size
+        return tensor.view(size[0], -1, size[-2], size[-1])
+
+    def __next__(self):
+        low, high, name = self.dataloader
+        return self.reshape(low), self.reshape(high), name
+
 class CustomDataset(Dataset):
     def __init__(self, datapath):
         super().__init__()
@@ -31,6 +46,111 @@ class CustomDataset(Dataset):
         img = Image.open(datafiles).convert('RGB')
         img = np.asarray(img, np.float32).transpose((2,0,1)) / 255.
         return img, self.name[idx]
+
+class SIDD_Dataset(Dataset):
+    def __init__(self, datapath, crop_size=256, crops_per_image=1, 
+                to_RAM=False, training=True):
+        super().__init__()
+        self.training = training
+        self.to_RAM = to_RAM
+        self.datapath = datapath
+        self.crop_size = crop_size
+        self.crops_per_image = crops_per_image
+        self.pairs = self.make_path_pair(datapath)
+        self.files = []
+        for lr_file, hr_file in self.pairs:
+            name = lr_file.split("\\")[-1][:-4]
+            self.files.append({
+                "lr": lr_file,
+                "hr": hr_file,
+                "name": name
+            })
+        self.data = []
+        if self.to_RAM:
+            for i, fileinfo in enumerate(self.files):
+                name = fileinfo["name"]
+                lr_img = Image.open(fileinfo["lr"])
+                hr_img = Image.open(fileinfo["hr"])
+                self.data.append({
+                    "lr": lr_img,
+                    "hr": hr_img,
+                    "name": name
+                })
+            log("Finish loading all images to RAM...")
+
+    def make_path_pair(self, datapath):
+        adds = '_crop' if self.training else '_val'
+        lr_dir = os.path.join(datapath, 'NOISY'+adds)
+        hr_dir = os.path.join(datapath, 'GT'+adds)
+
+        lr_files = [f for f in os.listdir(lr_dir) if any(filetype in 
+                    f.lower() for filetype in ['jpeg', 'png', 'jpg'])]
+        hr_files = [f for f in os.listdir(hr_dir) if any(filetype in 
+                    f.lower() for filetype in ['jpeg', 'png', 'jpg'])]
+
+        # Make Pair for LR and HR paths
+        pic_nums = min(len(lr_files), len(hr_files))
+        zip_paths = []
+        for i in range(pic_nums):
+            if lr_files[i][:4] == hr_files[i][:4]:
+                zip_file = [os.path.join(lr_dir, lr_files[i]), os.path.join(hr_dir, hr_files[i])]
+                zip_paths.append(zip_file)
+            else:
+                print("Warning: Can't pair LR and HR directly!")
+                for j in range(len(hr_files)):
+                    if lr_files[i] == hr_files[j]:
+                        zip_file = [os.path.join(lr_dir, lr_files[i]), os.path.join(hr_dir, hr_files[j])]
+                        zip_paths.append(zip_file) 
+                    else:
+                        print("Error: Picture '{}' have no pair HR image!".format(lr_files[i]))
+        
+        return zip_paths
+
+    def __len__(self):
+        return len(self.files)
+ 
+    def __getitem__(self, idx):
+        idx = idx % len(self.files)
+        datafiles = self.files[idx]
+ 
+        '''load the datas'''
+        if not self.to_RAM:
+            name = datafiles["name"]
+            lr_img = Image.open(datafiles["lr"])
+            hr_img = Image.open(datafiles["hr"])
+        else:
+            name = self.data[idx]["name"]
+            lr_img = self.data[idx]["lr"]
+            hr_img = self.data[idx]["hr"]
+ 
+        '''random crop the inputs'''
+        if self.crop_size > 0:
+            lr_crops = []
+            hr_crops = []
+            for i in range(self.crops_per_image):
+                #select a random start-point for croping operation
+                h_offset = random.randint(0, lr_img.size[1] - self.crop_size)
+                w_offset = random.randint(0, lr_img.size[0] - self.crop_size)
+                #crop the image and the label
+                crop_box = (w_offset, h_offset, w_offset+self.crop_size, h_offset+self.crop_size)
+                if self.training is True:
+                    lr_crop = lr_img.crop(crop_box)
+                    hr_crop = hr_img.crop(crop_box)
+                    rand_mode = np.random.randint(0, 7)
+                    lr_crop = data_augmentation(lr_crop, rand_mode)
+                    hr_crop = data_augmentation(hr_crop, rand_mode)
+                else:
+                    lr_crop = lr_img
+                    hr_crop = hr_img
+ 
+                '''convert PIL Image to numpy array'''
+                lr_crop = np.asarray(lr_crop, np.float32).transpose((2,0,1)) / 255.
+                hr_crop = np.asarray(hr_crop, np.float32).transpose((2,0,1)) / 255.
+
+                lr_crops.append(lr_crop)
+                hr_crops.append(hr_crop)
+
+        return np.array(lr_crops), np.array(hr_crops), name
 
 
 class LOLDataset(Dataset):
@@ -93,14 +213,15 @@ class LOLDataset(Dataset):
             w_offset = random.randint(0, lr_img.size[0] - self.crop_size)
             #crop the image and the label
             crop_box = (w_offset, h_offset, w_offset+self.crop_size, h_offset+self.crop_size)
-            lr_crop = lr_img
-            hr_crop = hr_img
             if self.training is True:
                 lr_crop = lr_img.crop(crop_box)
                 hr_crop = hr_img.crop(crop_box)
                 rand_mode = np.random.randint(0, 7)
                 lr_crop = data_augmentation(lr_crop, rand_mode)
                 hr_crop = data_augmentation(hr_crop, rand_mode)
+            else:
+                lr_crop = lr_img
+                hr_crop = hr_img
  
  
         '''convert PIL Image to numpy array'''

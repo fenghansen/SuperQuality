@@ -27,9 +27,10 @@ class Restore_Trainer(BaseTrainer):
         summary(self.model, input_size=[(3, 256, 256), (1,256,256)])
 
         optimizer = torch.optim.Adam(self.model.parameters(), lr=self.learning_rate)
-        scheduler = lr_scheduler.ExponentialLR(optimizer, gamma=0.9984) #0.977237, 0.986233
+        scheduler = lr_scheduler.ExponentialLR(optimizer, gamma=0.994) #0.977237, 0.986233
         try:
             for iter in range(self.epochs):
+                self.model.train()
                 epoch_loss = 0
                 idx = 0
                 hook_number = -1
@@ -61,10 +62,10 @@ class Restore_Trainer(BaseTrainer):
                     idx += 1
 
                 if iter % self.print_frequency == 0:
-                    self.test(iter, plot_dir='./images/samples-restore-att')
+                    self.test(iter, plot_dir='./images/samples-restore-mask')
 
                 if iter % self.save_frequency == 0:
-                    torch.save(self.model.state_dict(), f'./weights/restore-att/restore_att_{iter//100}.pth')
+                    torch.save(self.model.state_dict(), f'./weights/restore-SID/restore_mask_{iter//100}.pth')
                     log("Weight Has saved as 'restore_net.pth'")
                 
                 scheduler.step()
@@ -94,22 +95,23 @@ class Restore_Trainer(BaseTrainer):
 
             L_output_np = L_output.detach().cpu().numpy()[0]
             R_restore_np = R_restore.detach().cpu().numpy()[0]
-            I_low_np = I_low.detach().cpu().numpy()[0]
+            # I_low_np = I_low.detach().cpu().numpy()[0]
             R_low_np = R_low.detach().cpu().numpy()[0]
             R_high_np = R_high.detach().cpu().numpy()[0]
+            L_low_np = L_low_tensor.numpy()[0]
             L_high_np = L_high_tensor.numpy()[0]
 
-            sample_imgs = np.concatenate((R_low_np, R_restore_np, R_high_np, 1-I_low_np, L_output_np, L_high_np), axis=0 )
+            sample_imgs = np.concatenate((R_low_np, R_restore_np, R_high_np, L_low_np, L_output_np, L_high_np), axis=0 )
             
             filepath = os.path.join(plot_dir, f'{name[0]}_epoch_{epoch//100}.png')
-            split_point = [0, 3, 6, 9, 10, 13, 16]
+            split_point = None#[0, 3, 6, 9, 10, 13, 16]
             img_dim = L_high_np.shape[1:]
             sample(sample_imgs, split=split_point, figure_size=(2, 3), 
-                        img_dim=img_dim, path=filepath, num=epoch)
+                        img_dim=img_dim, path=filepath, num=epoch, metrics=True)
 
 if __name__ == "__main__":
     criterion = Restore_Loss()
-    model = RestoreNet_Unet()
+    model = RestoreNet_Unet(use_MaskMul=False)
     decom_net = DecomNet()
 
     parser = BaseParser()
@@ -120,10 +122,9 @@ if __name__ == "__main__":
     args.checkpoint = True
 
     if args.checkpoint is not None:
-        if config['noDecom'] is False:
-            decom_net = load_weights(decom_net, path='./weights/decom_net_normal.pth')
-            log('DecomNet loaded from decom_net.pth')
-        model = load_weights(model, path='./weights/restore_net_normal.pth')
+        decom_net = load_weights(decom_net, path='./weights/decom_net_normal.pth')
+        log('DecomNet loaded from decom_net.pth')
+        model = load_weights(model, path='./weights/restore_net_finetune.pth')# restore-SID/restore_mask_0.pth')
         log('Model loaded from restore_net.pth')
 
     root_path_train = r'H:\datasets\Low-Light Dataset\KinD++\LOLdataset\our485'
@@ -134,9 +135,8 @@ if __name__ == "__main__":
     # list_path_test = os.path.join(root_path_test, 'pair_list.csv')
 
     log("Buliding LOL Dataset...")
-    # transform = transforms.Compose([transforms.ToTensor()])
     dst_train = LOLDataset(root_path_train, list_path_train,
-                            crop_size=config['length'], to_RAM=True)
+                            crop_size=config['length'], to_RAM=False)
     dst_test = LOLDataset(root_path_test, list_path_test,
                             crop_size=config['length'], to_RAM=True, training=False)
 
@@ -147,7 +147,7 @@ if __name__ == "__main__":
     trainer = Restore_Trainer(config, train_loader, criterion, model, 
                             dataloader_test=test_loader, decom_net=decom_net)
 
-    if args.mode == 'train':
+    if args.mode == 'test':
         trainer.train()
     else:
-        trainer.test()
+        trainer.test(plot_dir='./images/samples-restore')

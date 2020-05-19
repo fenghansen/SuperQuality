@@ -170,7 +170,7 @@ class Decom_Loss(nn.Module):
         loss8_l2h =  F.l1_loss(R_low8 * I_high8, L_high8)
         recon_loss_cross = (loss4_h2l + loss4_l2h + 2*loss8_h2l + 2*loss8_l2h) / 3
         
-        return recon_loss_high + recon_loss_low + recon_loss_cross*0.01
+        return recon_loss_high + recon_loss_low + recon_loss_cross*0.09
 
     def forward(self, R_low, R_high, I_low, I_high, L_low, L_high, hook=-1):
         #network output
@@ -314,6 +314,7 @@ if __name__ == "__main__":
     from torch.utils.data import DataLoader
     from torchvision.utils import make_grid
     from matplotlib import pyplot as plt
+    from models import Standard_Illum
     root_path_train = r'H:\datasets\Low-Light Dataset\LOLdataset_decom\eval15'
     list_path_train = build_LOLDataset_Decom_list_txt(root_path_train)
     Batch_size = 1
@@ -323,16 +324,11 @@ if __name__ == "__main__":
     testloader = DataLoader(dst_test, batch_size = Batch_size)
     for i, data in enumerate(testloader):
         L_low, I_low, L_high, I_high, name = data
-        L_low_2 = nn.AvgPool2d((2,2))(L_low)
-        L_low_4 = nn.AvgPool2d((2,2))(L_low_2)
-        L_low_8 = nn.AvgPool2d((2,2))(L_low_4)
-        L_high_2 = nn.AvgPool2d((2,2))(L_high)
-        L_high_4 = nn.AvgPool2d((2,2))(L_high_2)
-        L_high_8 = nn.AvgPool2d((2,2))(L_high_4)
-        imgs = torch.cat([L_low, L_high], dim=1)
-        imgs_2 = torch.cat([L_low_2, L_high_2], dim=1)
-        imgs_4 = torch.cat([L_low_4, L_high_4], dim=1)
-        imgs_8 = torch.cat([L_low_8, L_high_8], dim=1)
+        with torch.no_grad():
+            ratio = torch.mean(I_high) / 0.5
+            I_standard = Standard_Illum(sigma=1)(I_low, ratio.item())
+            I_liner = I_low * torch.mean(I_high) / torch.mean(I_low)
+            imgs = torch.cat([I_low, I_high, I_liner, I_standard], dim=1)
         # L_gradient_low = gradient_no_abs(L_high, "x", device='cpu', kernel='sobel') + \
         #                  gradient_no_abs(L_high, "y", device='cpu', kernel='sobel')
         # L_gradient_high = gradient_no_abs(L_low, "x", device='cpu', kernel='sobel') + \
@@ -341,10 +337,4 @@ if __name__ == "__main__":
         # imgs = torch.cat([L_gradient_low, L_gradient_high, loss], dim=1)
         log(name)
         img = imgs[0].numpy()
-        sample(img, figure_size=(1,2), img_dim=img.shape[-2:])
-        img = imgs_2[0].numpy()
-        sample(img, figure_size=(1,2), img_dim=img.shape[-2:])
-        img = imgs_4[0].numpy()
-        sample(img, figure_size=(1,2), img_dim=img.shape[-2:])
-        img = imgs_8[0].numpy()
-        sample(img, figure_size=(1,2), img_dim=img.shape[-2:])
+        sample(img, figure_size=(2,2), img_dim=img.shape[-2:])
