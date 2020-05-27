@@ -398,3 +398,258 @@
 17:01:40 >>  psnr:6.2235 - ssim:0.1855
 17:01:40 >>  psnr:27.9454 - ssim:0.9380
 17:01:40 >>  Saving Image at ./images/samples-restore-gan-pyramid\9_epoch_-1.png
+17:13:24 >>  Saving Image at ./images/compare-lr-illum\1.png
+17:13:24 >>  Saving Image at ./images/compare-lr-illum\111.png
+17:13:24 >>  Saving Image at ./images/compare-lr-illum\146.png
+17:13:25 >>  Saving Image at ./images/compare-lr-illum\179.png
+17:13:25 >>  Saving Image at ./images/compare-lr-illum\22.png
+17:13:25 >>  Saving Image at ./images/compare-lr-illum\23.png
+17:13:25 >>  Saving Image at ./images/compare-lr-illum\493.png
+17:13:26 >>  Saving Image at ./images/compare-lr-illum\547.png
+17:13:26 >>  Saving Image at ./images/compare-lr-illum\55.png
+17:13:26 >>  Saving Image at ./images/compare-lr-illum\665.png
+17:13:27 >>  Saving Image at ./images/compare-lr-illum\669.png
+17:13:27 >>  Saving Image at ./images/compare-lr-illum\748.png
+17:13:27 >>  Saving Image at ./images/compare-lr-illum\778.png
+17:13:28 >>  Saving Image at ./images/compare-lr-illum\780.png
+17:13:28 >>  Saving Image at ./images/compare-lr-illum\79.png
+17:13:28 >>  Saving Image at ./images/compare-lr-illum\9.png
+17:15:36 >>  Saving Image at ./images/compare-lr-illum\1.png
+17:15:36 >>  Saving Image at ./images/compare-lr-illum\111.png
+17:15:36 >>  Saving Image at ./images/compare-lr-illum\146.png
+17:15:37 >>  Saving Image at ./images/compare-lr-illum\179.png
+17:15:37 >>  Saving Image at ./images/compare-lr-illum\22.png
+17:15:37 >>  Saving Image at ./images/compare-lr-illum\23.png
+17:15:38 >>  Saving Image at ./images/compare-lr-illum\493.png
+17:15:38 >>  Saving Image at ./images/compare-lr-illum\547.png
+17:15:38 >>  Saving Image at ./images/compare-lr-illum\55.png
+17:15:39 >>  Saving Image at ./images/compare-lr-illum\665.png
+17:15:39 >>  Saving Image at ./images/compare-lr-illum\669.png
+17:15:39 >>  Saving Image at ./images/compare-lr-illum\748.png
+17:15:40 >>  Saving Image at ./images/compare-lr-illum\778.png
+17:15:40 >>  Saving Image at ./images/compare-lr-illum\780.png
+17:15:40 >>  Saving Image at ./images/compare-lr-illum\79.png
+17:15:40 >>  Saving Image at ./images/compare-lr-illum\9.png
+18:14:44 >>  Saving Image at ./images/compare-lr-illum\1.png
+18:14:44 >>  Saving Image at ./images/compare-lr-illum\111.png
+18:14:44 >>  Saving Image at ./images/compare-lr-illum\146.png
+18:14:45 >>  Saving Image at ./images/compare-lr-illum\179.png
+18:14:45 >>  Saving Image at ./images/compare-lr-illum\22.png
+18:14:45 >>  Saving Image at ./images/compare-lr-illum\23.png
+18:14:45 >>  Saving Image at ./images/compare-lr-illum\493.png
+18:14:46 >>  Saving Image at ./images/compare-lr-illum\547.png
+18:14:46 >>  Saving Image at ./images/compare-lr-illum\55.png
+18:14:46 >>  Saving Image at ./images/compare-lr-illum\665.png
+18:14:47 >>  Saving Image at ./images/compare-lr-illum\669.png
+18:14:47 >>  Saving Image at ./images/compare-lr-illum\748.png
+18:14:47 >>  Saving Image at ./images/compare-lr-illum\778.png
+18:14:48 >>  Saving Image at ./images/compare-lr-illum\780.png
+18:14:48 >>  Saving Image at ./images/compare-lr-illum\79.png
+18:14:48 >>  Saving Image at ./images/compare-lr-illum\9.png
+18:16:00 >>  Saving Image at ./images/compare-lr-illum\1.png
+18:16:01 >>  Saving Image at ./images/compare-lr-illum\111.png
+18:16:01 >>  Saving Image at ./images/compare-lr-illum\146.png
+18:16:01 >>  Saving Image at ./images/compare-lr-illum\179.png
+18:16:02 >>  Saving Image at ./images/compare-lr-illum\22.png
+18:16:02 >>  Saving Image at ./images/compare-lr-illum\23.png
+18:16:02 >>  Saving Image at ./images/compare-lr-illum\493.png
+18:16:02 >>  Saving Image at ./images/compare-lr-illum\547.png
+18:16:03 >>  Saving Image at ./images/compare-lr-illum\55.png
+18:16:03 >>  Saving Image at ./images/compare-lr-illum\665.png
+18:16:03 >>  Saving Image at ./images/compare-lr-illum\669.png
+18:16:04 >>  Saving Image at ./images/compare-lr-illum\748.png
+18:16:04 >>  Saving Image at ./images/compare-lr-illum\778.png
+18:16:04 >>  Saving Image at ./images/compare-lr-illum\780.png
+18:16:05 >>  Saving Image at ./images/compare-lr-illum\79.png
+18:16:05 >>  Saving Image at ./images/compare-lr-illum\9.png
+18:17:22 >>  Saving Image at ./images/compare-lr-illum\1.png
+18:17:22 >>  Saving Image at ./images/compare-lr-illum\111.png
+18:17:23 >>  Saving Image at ./images/compare-lr-illum\146.png
+18:17:23 >>  Saving Image at ./images/compare-lr-illum\179.png
+18:17:23 >>  Saving Image at ./images/compare-lr-illum\22.png
+18:17:24 >>  Saving Image at ./images/compare-lr-illum\23.png
+18:17:24 >>  Saving Image at ./images/compare-lr-illum\493.png
+18:17:24 >>  Saving Image at ./images/compare-lr-illum\547.png
+18:17:25 >>  Saving Image at ./images/compare-lr-illum\55.png
+18:17:25 >>  Saving Image at ./images/compare-lr-illum\665.png
+18:17:25 >>  Saving Image at ./images/compare-lr-illum\669.png
+18:17:26 >>  Saving Image at ./images/compare-lr-illum\748.png
+18:17:26 >>  Saving Image at ./images/compare-lr-illum\778.png
+18:17:26 >>  Saving Image at ./images/compare-lr-illum\780.png
+18:17:26 >>  Saving Image at ./images/compare-lr-illum\79.png
+18:17:27 >>  Saving Image at ./images/compare-lr-illum\9.png
+18:22:16 >>  Saving Image at ./images/compare-lr-custom\1.png
+18:22:17 >>  Saving Image at ./images/compare-lr-custom\111.png
+18:22:17 >>  Saving Image at ./images/compare-lr-custom\146.png
+18:22:17 >>  Saving Image at ./images/compare-lr-custom\179.png
+18:22:18 >>  Saving Image at ./images/compare-lr-custom\22.png
+18:22:18 >>  Saving Image at ./images/compare-lr-custom\23.png
+18:22:19 >>  Saving Image at ./images/compare-lr-custom\493.png
+18:22:19 >>  Saving Image at ./images/compare-lr-custom\547.png
+18:22:19 >>  Saving Image at ./images/compare-lr-custom\55.png
+18:22:20 >>  Saving Image at ./images/compare-lr-custom\665.png
+18:22:20 >>  Saving Image at ./images/compare-lr-custom\669.png
+18:22:21 >>  Saving Image at ./images/compare-lr-custom\748.png
+18:22:21 >>  Saving Image at ./images/compare-lr-custom\778.png
+18:22:22 >>  Saving Image at ./images/compare-lr-custom\780.png
+18:22:22 >>  Saving Image at ./images/compare-lr-custom\79.png
+18:22:22 >>  Saving Image at ./images/compare-lr-custom\9.png
+17:37:53 >>  Saving Image at ./images/samples-decom-color\1_epoch_-1.png
+17:37:53 >>  Saving Image at ./images/samples-decom-color\111_epoch_-1.png
+17:37:53 >>  Saving Image at ./images/samples-decom-color\146_epoch_-1.png
+17:37:53 >>  Saving Image at ./images/samples-decom-color\179_epoch_-1.png
+17:37:53 >>  Saving Image at ./images/samples-decom-color\20005_11_epoch_-1.png
+17:37:54 >>  Saving Image at ./images/samples-decom-color\20107_11_epoch_-1.png
+17:37:54 >>  Saving Image at ./images/samples-decom-color\20147_11_epoch_-1.png
+17:37:54 >>  Saving Image at ./images/samples-decom-color\20153_21_epoch_-1.png
+17:37:54 >>  Saving Image at ./images/samples-decom-color\20201_11_epoch_-1.png
+17:37:55 >>  Saving Image at ./images/samples-decom-color\20210_23_epoch_-1.png
+17:37:55 >>  Saving Image at ./images/samples-decom-color\22_epoch_-1.png
+17:37:55 >>  Saving Image at ./images/samples-decom-color\23_epoch_-1.png
+17:37:55 >>  Saving Image at ./images/samples-decom-color\493_epoch_-1.png
+17:37:55 >>  Saving Image at ./images/samples-decom-color\547_epoch_-1.png
+17:37:56 >>  Saving Image at ./images/samples-decom-color\55_epoch_-1.png
+17:37:56 >>  Saving Image at ./images/samples-decom-color\665_epoch_-1.png
+17:37:56 >>  Saving Image at ./images/samples-decom-color\669_epoch_-1.png
+17:37:56 >>  Saving Image at ./images/samples-decom-color\748_epoch_-1.png
+17:37:56 >>  Saving Image at ./images/samples-decom-color\778_epoch_-1.png
+17:37:57 >>  Saving Image at ./images/samples-decom-color\780_epoch_-1.png
+17:37:57 >>  Saving Image at ./images/samples-decom-color\79_epoch_-1.png
+17:37:57 >>  Saving Image at ./images/samples-decom-color\9_epoch_-1.png
+17:40:21 >>  Saving Image at ./images/samples-decom-color\1_epoch_0.png
+17:40:21 >>  Saving Image at ./images/samples-decom-color\111_epoch_0.png
+17:40:21 >>  Saving Image at ./images/samples-decom-color\146_epoch_0.png
+17:40:21 >>  Saving Image at ./images/samples-decom-color\179_epoch_0.png
+17:40:22 >>  Saving Image at ./images/samples-decom-color\20005_11_epoch_0.png
+17:40:22 >>  Saving Image at ./images/samples-decom-color\20107_11_epoch_0.png
+17:40:22 >>  Saving Image at ./images/samples-decom-color\20147_11_epoch_0.png
+17:40:22 >>  Saving Image at ./images/samples-decom-color\20153_21_epoch_0.png
+17:40:22 >>  Saving Image at ./images/samples-decom-color\20201_11_epoch_0.png
+17:40:23 >>  Saving Image at ./images/samples-decom-color\20210_23_epoch_0.png
+17:40:23 >>  Saving Image at ./images/samples-decom-color\22_epoch_0.png
+17:40:23 >>  Saving Image at ./images/samples-decom-color\23_epoch_0.png
+17:40:23 >>  Saving Image at ./images/samples-decom-color\493_epoch_0.png
+17:40:24 >>  Saving Image at ./images/samples-decom-color\547_epoch_0.png
+17:40:24 >>  Saving Image at ./images/samples-decom-color\55_epoch_0.png
+17:40:24 >>  Saving Image at ./images/samples-decom-color\665_epoch_0.png
+17:40:24 >>  Saving Image at ./images/samples-decom-color\669_epoch_0.png
+17:40:24 >>  Saving Image at ./images/samples-decom-color\748_epoch_0.png
+17:40:25 >>  Saving Image at ./images/samples-decom-color\778_epoch_0.png
+17:40:25 >>  Saving Image at ./images/samples-decom-color\780_epoch_0.png
+17:40:25 >>  Saving Image at ./images/samples-decom-color\79_epoch_0.png
+17:40:25 >>  Saving Image at ./images/samples-decom-color\9_epoch_0.png
+19:06:41 >>  psnr:16.3848 - ssim:0.8386
+19:06:41 >>  psnr:23.0771 - ssim:0.8981
+19:06:41 >>  psnr:7.2193 - ssim:0.2610
+19:06:41 >>  psnr:25.4898 - ssim:0.9437
+19:06:41 >>  Saving Image at ./images/samples-restore-gan\1_epoch_-1.png
+19:06:42 >>  psnr:21.1871 - ssim:0.8468
+19:06:42 >>  psnr:27.8318 - ssim:0.9506
+19:06:42 >>  psnr:5.6122 - ssim:0.2111
+19:06:43 >>  psnr:30.1941 - ssim:0.9688
+19:06:43 >>  Saving Image at ./images/samples-restore-gan\111_epoch_-1.png
+19:06:43 >>  psnr:24.0291 - ssim:0.8589
+19:06:43 >>  psnr:23.9103 - ssim:0.9002
+19:06:43 >>  psnr:6.6295 - ssim:0.2849
+19:06:44 >>  psnr:28.1601 - ssim:0.9436
+19:06:44 >>  Saving Image at ./images/samples-restore-gan\146_epoch_-1.png
+19:06:44 >>  psnr:21.8225 - ssim:0.8365
+19:06:44 >>  psnr:19.5059 - ssim:0.8279
+19:06:45 >>  psnr:12.3772 - ssim:0.4811
+19:06:45 >>  psnr:22.7821 - ssim:0.8710
+19:06:45 >>  Saving Image at ./images/samples-restore-gan\179_epoch_-1.png
+19:06:45 >>  psnr:20.6032 - ssim:0.8240
+19:06:45 >>  psnr:23.5394 - ssim:0.9066
+19:06:46 >>  psnr:6.1071 - ssim:0.2153
+19:06:46 >>  psnr:28.8411 - ssim:0.9540
+19:06:46 >>  Saving Image at ./images/samples-restore-gan\22_epoch_-1.png
+19:06:46 >>  psnr:17.2140 - ssim:0.7364
+19:06:47 >>  psnr:19.9771 - ssim:0.8691
+19:06:47 >>  psnr:4.6465 - ssim:0.0946
+19:06:47 >>  psnr:23.2459 - ssim:0.9304
+19:06:47 >>  Saving Image at ./images/samples-restore-gan\23_epoch_-1.png
+19:06:47 >>  psnr:15.6113 - ssim:0.6507
+19:06:48 >>  psnr:16.0370 - ssim:0.6881
+19:06:48 >>  psnr:10.8915 - ssim:0.2471
+19:06:48 >>  psnr:21.0580 - ssim:0.8214
+19:06:48 >>  Saving Image at ./images/samples-restore-gan\493_epoch_-1.png
+19:06:49 >>  psnr:23.7892 - ssim:0.8071
+19:06:49 >>  psnr:23.0749 - ssim:0.9116
+19:06:49 >>  psnr:8.9776 - ssim:0.2482
+19:06:49 >>  psnr:27.0020 - ssim:0.9532
+19:06:49 >>  Saving Image at ./images/samples-restore-gan\547_epoch_-1.png
+19:06:50 >>  psnr:17.8003 - ssim:0.7467
+19:06:50 >>  psnr:20.6682 - ssim:0.8788
+19:06:50 >>  psnr:4.5212 - ssim:0.0887
+19:06:50 >>  psnr:22.7685 - ssim:0.9359
+19:06:50 >>  Saving Image at ./images/samples-restore-gan\55_epoch_-1.png
+19:06:51 >>  psnr:17.4017 - ssim:0.7171
+19:06:51 >>  psnr:21.7383 - ssim:0.8515
+19:06:51 >>  psnr:6.8168 - ssim:0.0975
+19:06:51 >>  psnr:25.9610 - ssim:0.9209
+19:06:51 >>  Saving Image at ./images/samples-restore-gan\665_epoch_-1.png
+19:06:52 >>  psnr:23.4018 - ssim:0.7999
+19:06:52 >>  psnr:25.5970 - ssim:0.9160
+19:06:52 >>  psnr:6.7474 - ssim:0.2119
+19:06:52 >>  psnr:28.5006 - ssim:0.9515
+19:06:53 >>  Saving Image at ./images/samples-restore-gan\669_epoch_-1.png
+19:06:53 >>  psnr:22.8649 - ssim:0.8060
+19:06:53 >>  psnr:23.1358 - ssim:0.8979
+19:06:53 >>  psnr:9.9620 - ssim:0.2166
+19:06:54 >>  psnr:27.3585 - ssim:0.9513
+19:06:54 >>  Saving Image at ./images/samples-restore-gan\748_epoch_-1.png
+19:06:54 >>  psnr:18.6503 - ssim:0.7062
+19:06:54 >>  psnr:19.5100 - ssim:0.7565
+19:06:54 >>  psnr:8.8772 - ssim:0.1051
+19:06:55 >>  psnr:24.7816 - ssim:0.8852
+19:06:55 >>  Saving Image at ./images/samples-restore-gan\778_epoch_-1.png
+19:06:55 >>  psnr:22.1233 - ssim:0.7802
+19:06:55 >>  psnr:21.4187 - ssim:0.8136
+19:06:56 >>  psnr:12.1243 - ssim:0.3339
+19:06:56 >>  psnr:27.5715 - ssim:0.8584
+19:06:56 >>  Saving Image at ./images/samples-restore-gan\780_epoch_-1.png
+19:06:56 >>  psnr:24.2736 - ssim:0.8583
+19:06:57 >>  psnr:28.1621 - ssim:0.9550
+19:06:57 >>  psnr:5.0899 - ssim:0.2230
+19:06:57 >>  psnr:29.7966 - ssim:0.9720
+19:06:57 >>  Saving Image at ./images/samples-restore-gan\79_epoch_-1.png
+19:06:57 >>  psnr:20.9486 - ssim:0.7972
+19:06:58 >>  psnr:24.6284 - ssim:0.9092
+19:06:58 >>  psnr:6.2235 - ssim:0.1855
+19:06:58 >>  psnr:27.7169 - ssim:0.9402
+19:06:58 >>  Saving Image at ./images/samples-restore-gan\9_epoch_-1.png
+19:45:00 >>  Saving Image at ./images/compare-lr-custom-best\1.png
+19:45:00 >>  Saving Image at ./images/compare-lr-custom-best\111.png
+19:45:00 >>  Saving Image at ./images/compare-lr-custom-best\146.png
+19:45:01 >>  Saving Image at ./images/compare-lr-custom-best\179.png
+19:45:01 >>  Saving Image at ./images/compare-lr-custom-best\22.png
+19:45:02 >>  Saving Image at ./images/compare-lr-custom-best\23.png
+19:45:02 >>  Saving Image at ./images/compare-lr-custom-best\493.png
+19:45:03 >>  Saving Image at ./images/compare-lr-custom-best\547.png
+19:45:03 >>  Saving Image at ./images/compare-lr-custom-best\55.png
+19:45:03 >>  Saving Image at ./images/compare-lr-custom-best\665.png
+19:45:04 >>  Saving Image at ./images/compare-lr-custom-best\669.png
+19:45:04 >>  Saving Image at ./images/compare-lr-custom-best\748.png
+19:45:05 >>  Saving Image at ./images/compare-lr-custom-best\778.png
+19:45:05 >>  Saving Image at ./images/compare-lr-custom-best\780.png
+19:45:06 >>  Saving Image at ./images/compare-lr-custom-best\79.png
+19:45:06 >>  Saving Image at ./images/compare-lr-custom-best\9.png
+21:10:37 >>  Saving Image at ./images/outputs-illum-custom-light/2_0.png
+21:10:37 >>  Saving Image at ./images/outputs-illum-custom-light/2_1.png
+21:10:37 >>  Saving Image at ./images/outputs-illum-custom-light/2_2.png
+21:10:37 >>  Saving Image at ./images/outputs-illum-custom-light/2_3.png
+21:10:37 >>  Saving Image at ./images/outputs-illum-custom-light/2_4.png
+21:10:37 >>  Saving Image at ./images/outputs-illum-custom-light/2_5.png
+21:10:37 >>  Saving Image at ./images/outputs-illum-custom-light/2_extra.png
+21:13:12 >>  Saving Image at ./images/outputs-illum-custom-light/1_0.png
+21:13:12 >>  Saving Image at ./images/outputs-illum-custom-light/1_1.png
+21:13:12 >>  Saving Image at ./images/outputs-illum-custom-light/1_2.png
+21:13:12 >>  Saving Image at ./images/outputs-illum-custom-light/1_3.png
+21:13:12 >>  Saving Image at ./images/outputs-illum-custom-light/1_4.png
+21:13:13 >>  Saving Image at ./images/outputs-illum-custom-light/1_extra.png
+21:13:13 >>  Saving Image at ./images/outputs-illum-custom-light/2_0.png
+21:13:13 >>  Saving Image at ./images/outputs-illum-custom-light/2_1.png
+21:13:13 >>  Saving Image at ./images/outputs-illum-custom-light/2_2.png
+21:13:13 >>  Saving Image at ./images/outputs-illum-custom-light/2_3.png
+21:13:13 >>  Saving Image at ./images/outputs-illum-custom-light/2_4.png
+21:13:13 >>  Saving Image at ./images/outputs-illum-custom-light/2_extra.png

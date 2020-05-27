@@ -14,20 +14,10 @@ from torch.utils.data import Dataset, DataLoader
 import pytorch_colors as colors
 from utils import *
 
-class crops_reshape():
-    def __init__(self, dataloader):
-        self.dataloader = dataloader
 
-    def __iter__(self):
-        return self
-
-    def reshape(self, tensor):
-        size = tensor.size
-        return tensor.view(size[0], -1, size[-2], size[-1])
-
-    def __next__(self):
-        low, high, name = self.dataloader
-        return self.reshape(low), self.reshape(high), name
+def reshape(tensor):
+    size = tensor.size()
+    return tensor.view(-1, size[-3], size[-2], size[-1])
 
 class CustomDataset(Dataset):
     def __init__(self, datapath):
@@ -142,7 +132,7 @@ class SIDD_Dataset(Dataset):
                 else:
                     lr_crop = lr_img
                     hr_crop = hr_img
- 
+
                 '''convert PIL Image to numpy array'''
                 lr_crop = np.asarray(lr_crop, np.float32).transpose((2,0,1)) / 255.
                 hr_crop = np.asarray(hr_crop, np.float32).transpose((2,0,1)) / 255.
@@ -150,7 +140,7 @@ class SIDD_Dataset(Dataset):
                 lr_crops.append(lr_crop)
                 hr_crops.append(hr_crop)
 
-        return np.array(lr_crops), np.array(hr_crops), name
+        return np.array(lr_crop), np.array(hr_crop), name
 
 
 class LOLDataset(Dataset):

@@ -32,7 +32,25 @@ class KinD_Player(BaseTrainer):
             with torch.no_grad():
                 if self.plot_more:
                     R_low, I_low = self.model.decom_net(L_low)
-                
+                # # 连续亮度过渡
+                # R_low, I_low = self.model.decom_net(L_low)
+                # I_final, I_standard = self.model.illum_net(I_low, ratio)
+                # R_final = self.model.restore_net(R_low, I_low)
+                # I_att = torch.clamp(F.sigmoid((.5-I_low)*10)/0.99330, min=0.2, max=1.0)
+                # R_final = R_low + (R_final-R_low) * torch.cat([I_att, I_att, I_att], dim=1)
+
+                # for step in range(5):
+                #     I_step = 0.25*(step*I_final + (4-step)*I_standard)
+                #     I_final_3 = torch.cat([I_step, I_step, I_step], dim=1)
+                #     output_final = I_final_3 * R_final
+                #     output_final_np = output_final.detach().cpu().numpy()[0]
+                #     L_low_np = L_low_tensor.numpy()[0]
+                #     # Only plot result 
+                #     filepath = os.path.join(plot_dir, f'{name[0]}_{step}.png')
+                #     split_point = [0, 3]
+                #     img_dim = L_low_np.shape[1:]
+                #     sample(output_final_np, split=split_point, figure_size=(1, 1), 
+                #                 img_dim=img_dim, path=filepath)
                 R_final, I_final, output_final = self.model(L_low, ratio, limit_highlight=True)
 
             output_final_np = output_final.detach().cpu().numpy()[0]
@@ -65,11 +83,11 @@ class TestParser(BaseParser):
                                 help="Plot intermediate variables. such as R_images and I_images")
         self.parser.add_argument("-c", "--checkpoint", default="./weights/", 
                                 help="Path of checkpoints")
-        self.parser.add_argument("-i", "--input_dir", default="./images/inputs/", 
+        self.parser.add_argument("-i", "--input_dir", default="./images/inputs-light/", 
                                 help="Path of input pictures")
-        self.parser.add_argument("-o", "--output_dir", default="./images/outputs/", 
+        self.parser.add_argument("-o", "--output_dir", default="./images/outputs-illum-custom-light/", 
                                 help="Path of output pictures")
-        self.parser.add_argument("-r", "--ratio", default=1, help="Target brightness")
+        self.parser.add_argument("-r", "--ratio", default=1.5, help="Target brightness")
         # self.parser.add_argument("-u", "--use_gpu", default=True, 
         #                         help="If you want to use GPU to accelerate")
         return self.parser.parse_args()
@@ -86,7 +104,7 @@ if __name__ == "__main__":
     checkpoint = args.checkpoint
     decom_net_dir = os.path.join(checkpoint, "decom_net_normal.pth")
     restore_net_dir = os.path.join(checkpoint, "restore_GAN_mask.pth")
-    illum_net_dir = os.path.join(checkpoint, "illum_net_custom.pth")
+    illum_net_dir = os.path.join(checkpoint, "illum_net_custom_final.pth")
     
     model.decom_net = load_weights(model.decom_net, path=decom_net_dir)
     log('Model loaded from decom_net.pth')

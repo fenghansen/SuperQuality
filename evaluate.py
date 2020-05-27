@@ -26,23 +26,17 @@ class KinD_noDecom_Trainer(BaseTrainer):
                 L_low = L_low_tensor.to(self.device)
                 L_high = L_high_tensor.to(self.device)
 
-                R_low, I_low = self.model.decom_net(L_low)
-                R_high, I_high = self.model.decom_net(L_high)
-                I_low_3 = torch.cat([I_low, I_low, I_low], dim=1)
-                I_high_3 = torch.cat([I_high, I_high, I_high], dim=1)
+                with torch.no_grad():
+                    R_low, I_low = self.model.decom_net(L_low)
+                    R_high, I_high = self.model.decom_net(L_high)
+                    I_low_3 = torch.cat([I_low, I_low, I_low], dim=1)
+                    I_high_3 = torch.cat([I_high, I_high, I_high], dim=1)
 
-                output_low = I_low_3 * R_low
-                output_high = I_high_3 * R_high
+                    output_low = I_low_3 * R_low
+                    output_high = I_high_3 * R_high
 
-                b = 0.7; w=0.5
-                # bright_low = torch.mean(I_low)
-                # bright_high = torch.mean(I_high)
-                # bright_high = torch.ones_like(bright_low) * b + bright_low * w
-                # ratio = torch.div(bright_high, bright_low)
-                # log(f"Brightness: {bright_high}\tIllumation Magnification: {ratio.item()}")
-                # ratio_map = torch.ones_like(I_low) * ratio
-                ratio = 1
-                R_final, I_final, output_final = self.model(L_low, ratio)
+                    ratio = torch.mean(I_high) / 0.5
+                    R_final, I_final, output_final = self.model(L_low, ratio)
 
                 R_final_np = R_final.detach().cpu().numpy()[0]
                 I_final_np = I_final.detach().cpu().numpy()[0]
@@ -64,8 +58,9 @@ class KinD_noDecom_Trainer(BaseTrainer):
                 filepath = os.path.join(plot_dir, f'{name[0]}_epoch_{epoch}.png')
                 split_point = [0, 3, 4, 7, 10, 13, 14, 17, 20, 23, 24, 27, 30]
                 img_dim = I_high_np.shape[1:]
-                sample(sample_imgs, split=split_point, figure_size=(3, 4), 
-                            img_dim=img_dim, path=filepath, num=epoch)
+                # sample(sample_imgs, split=split_point, figure_size=(3, 4), 
+                #             img_dim=img_dim, path=filepath, num=epoch)
+                sample(output_final_np, path=os.path.join(plot_dir, f'{name[0]}.png'))
         else:
             for R_low_tensor, I_low_tensor, R_high_tensor, I_high_tensor, name in self.dataloader_test:
                 R_low = R_low_tensor.to(self.device)
@@ -115,17 +110,17 @@ if __name__ == "__main__":
     if config['noDecom'] is True:
         model = KinD_noDecom()
     else:
-        model = KinD()
+        model = KinD(use_MaskMul=True)
 
     if args.checkpoint is not None:
         if config['noDecom'] is False:
-            pretrain_decom = torch.load('./weights/decom_net.pth')
+            pretrain_decom = torch.load('./weights/decom_net_normal.pth')
             model.decom_net.load_state_dict(pretrain_decom)
             log('Model loaded from decom_net.pth')
-        pretrain_resotre = torch.load('./weights/restore_net.pth')
+        pretrain_resotre = torch.load('./weights/restore_GAN_mask_best.pth')
         model.restore_net.load_state_dict(pretrain_resotre)
         log('Model loaded from restore_net.pth')
-        pretrain_illum = torch.load('./weights/illum_net_custom_4.pth')
+        pretrain_illum = torch.load('./weights/illum_net_custom_final.pth')
         model.illum_net.load_state_dict(pretrain_illum)
         log('Model loaded from illum_net.pth')
 
@@ -151,5 +146,5 @@ if __name__ == "__main__":
     KinD = KinD_noDecom_Trainer(config, None, criterion, model, dataloader_test=test_loader)
     
     # Please change your output direction here
-    output_dir = './images/samples-KinD-MSIA'
+    output_dir = './images/compare-lr-custom-best'
     KinD.test(plot_dir=output_dir)

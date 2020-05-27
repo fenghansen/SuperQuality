@@ -105,7 +105,7 @@ if __name__ == "__main__":
     args = parser.parse()
     args.checkpoint = True
     if args.checkpoint is not None:
-        model = load_weights(model, path='./weights/decom-SID/decom_net_1.pth')
+        model = load_weights(model, path='./weights/decom_net_0.001color.pth')
         print('Model loaded from decom_net.pth')
 
     with open(args.config) as f:
@@ -121,7 +121,7 @@ if __name__ == "__main__":
     log("Buliding LOL Dataset...")
     # transform = transforms.Compose([transforms.ToTensor(),])
     dst_train = LOLDataset(root_path_train, list_path_train,
-                            crop_size=config['length'], to_RAM=True)
+                            crop_size=config['length'], to_RAM=False)
     dst_test = LOLDataset(root_path_test, list_path_test,
                             crop_size=config['length'], to_RAM=True, training=False)
 
@@ -130,7 +130,7 @@ if __name__ == "__main__":
 
     trainer = Decom_Trainer(config, train_loader, criterion, model, dataloader_test=test_loader)
     # --config ./config/config.yaml
-    if args.mode == 'train':
+    if args.mode == 'test':
         trainer.train()
     else:
-        trainer.test(plot_dir='./images/samples-decom-SID')
+        trainer.test(plot_dir='./images/samples-decom-color', epoch=0)

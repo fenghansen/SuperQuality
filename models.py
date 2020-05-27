@@ -92,13 +92,19 @@ class Standard_Illum(nn.Module):
         I_std = torch.std(I, dim=[2, 3], keepdim=True)
         I_min = I_mean - self.sigma * I_std
         I_max = I_mean + self.sigma * I_std
-        I_range = I_max - I_min
-        I_out = torch.clamp((I - I_min) / I_range, min=0.0, max=1.0)
+        tmp_low, _ = torch.min(I,dim=2,keepdim=True)
+        I_below, _ = torch.min(tmp_low,dim=3,keepdim=True)
+        tmp_high,_ = torch.max(I,dim=2,keepdim=True)
+        I_top, _  = torch.max(tmp_high,dim=3,keepdim=True)
+        I_range_min = torch.max(I_min, I_below)
+        I_range_max = torch.min(I_max, I_top)
+        I_range = I_range_max - I_range_min
+        I_out = torch.clamp((I - I_range_min) / I_range, min=0.0, max=1.0)
         # Transfer to gamma correction, center intensity is w
-        I_out = I_out ** (-1.442695 * torch.log(self.w*ratio))
+        I_out = I_out ** (1 / (self.w * ratio) - 1)
         return I_out
 
-class IllumNet_Custom(nn.Module):
+class IllumNet(nn.Module):
     def __init__(self, filters=16, w=0.5, sigma=2.0):
         super().__init__()
         self.concat_input = Concat()
@@ -107,51 +113,31 @@ class IllumNet_Custom(nn.Module):
 
         # bottom path build Illumination map
         self.conv_input = nn.Sequential(
-            nn.Conv2d(3, filters, kernel_size=1, padding=0),
+            nn.Conv2d(1, filters, kernel_size=1, padding=0),
             nn.LeakyReLU(0.2)
         )
         self.res_block1 = ResConv(filters, filters)
-        self.ca1 = ChannelAttention(filters*2)
-        self.bottleneck1 = conv1x1(filters*2, filters)
         self.res_block2 = ResConv(filters, filters)
-        self.ca2 = ChannelAttention(filters*2)
-        self.bottleneck2 = conv1x1(filters*2, filters)
         self.res_block3 = ResConv(filters, filters)
-        self.ca3 = ChannelAttention(filters*2)
-        self.bottleneck3 = conv1x1(filters*2, filters)
-        self.conv_out = nn.Conv2d(filters*1, 1, kernel_size=1, padding=0)
+        self.conv_out = conv1x1(filters, 1)
 
-        self.fusion = conv1x1(2,1,bias=False)
         self.I_out = nn.Sigmoid()
 
     def forward(self, I, ratio):
-        I_Att = 1-I
         with torch.no_grad():
             I_standard = self.I_standard(I, ratio)
-        concat_input = torch.cat([I, I_standard, I_Att], dim=1)
+        # concat_input = torch.cat([I, I_standard], dim=1)
         # build Illumination map
-        conv_input = self.conv_input(concat_input)
+        # conv_input = self.conv_input(concat_input)
+        conv_input = self.conv_input(I_standard)
 
         res_block1 = self.res_block1(conv_input)
-        res_concat1 = torch.cat([res_block1, MaskMul(1)(res_block1, I_Att)], dim=1)
-        ca1 = res_concat1 * self.ca1(res_concat1)
-        bottleneck1 = self.bottleneck1(ca1)
-
-        res_block2 = self.res_block2(bottleneck1)
-        res_concat2 = torch.cat([res_block2, MaskMul(1)(res_block2, I_Att)], dim=1)
-        ca2 = res_concat2 * self.ca2(res_concat2)
-        bottleneck2 = self.bottleneck2(ca2)
-
-        res_block3 = self.res_block3(bottleneck2)
+        res_block2 = self.res_block2(res_block1)
+        res_block3 = self.res_block3(res_block2)
         res_out = res_block3 + conv_input
+        conv_out = self.conv_out(res_out)
 
-        res_concat3 = torch.cat([res_block3, MaskMul(1)(res_out, I_Att)], dim=1)
-        ca3 = res_concat3 * self.ca3(res_concat3)
-        bottleneck3 = self.bottleneck3(ca3)
-
-        conv_out = self.conv_out(bottleneck3)
-        fusion = self.fusion(torch.cat([conv_out, I_standard],dim=1))
-        I_out = self.I_out(fusion)
+        I_out = conv_out# + I_standard
 
         return I_out, I_standard
 
@@ -589,6 +575,7 @@ class KinD(nn.Module):
     def forward(self, L, ratio, limit_highlight=True):
         R, I = self.decom_net(L)
         I_final, I_standard = self.illum_net(I, ratio)
+        # I_final = I_standard
         R_final = self.restore_net(R, I)
         if limit_highlight:
             I_att = torch.clamp(F.sigmoid((.5-I)*10)/0.99330, min=0.2, max=1.0)

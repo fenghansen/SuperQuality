@@ -185,7 +185,7 @@ class Decom_Loss(nn.Module):
         return decom_loss
 
 
-class Illum_Custom_Loss(nn.Module):
+class Illum_Loss(nn.Module):
     def __init__(self):
         super().__init__()
     
@@ -200,10 +200,10 @@ class Illum_Custom_Loss(nn.Module):
         return loss
 
     def forward(self, I_low, I_high, I_standard):
-        loss_gamma = self.gamma_loss(I_standard, I_high)
+        # loss_gamma = self.gamma_loss(I_standard, I_high)
         loss_grad = self.grad_loss(I_low, I_high)
         loss_recon = F.l1_loss(I_low, I_high)
-        loss_adjust = loss_recon + loss_grad + loss_gamma*0.0001
+        loss_adjust = loss_recon + loss_grad# + loss_gamma*0.0001
         return loss_adjust
 
 
@@ -226,7 +226,7 @@ class Restore_Loss(nn.Module):
 
     def forward(self, R_low, R_high, L2,L4,L8,hook=-1):
         H2,H4,H8 = Pyramid_Sample(R_high, max_scale=8)
-        loss_restore = self.loss(R_low, R_high)+self.loss(L2,H2)/2+self.loss(L4,H4)/4+self.loss(L8,H8)/8
+        loss_restore = self.loss(R_low, R_high)+self.loss(L2,H2)+self.loss(L4,H4)+self.loss(L8,H8)
         # loss_grad = self.grad_loss(R_low, R_high, hook=hook)
         # loss_recon = F.l1_loss(R_low, R_high)
         # loss_ssim = 1-self.ssim_loss(R_low, R_high)
@@ -238,26 +238,16 @@ class Unet_Loss(nn.Module):
     def __init__(self):
         super().__init__()
         self.ssim_loss = pytorch_ssim.SSIM()
-    
-    def gradient_loss(self, low, high):
-        low_gradient_x = gradient(low, "x")
-        high_gradient_x = gradient(high, "x")
-        low_gradient_y = gradient(low, "y")
-        high_gradient_y = gradient(high, "y")
-        x_loss = F.l1_loss(low_gradient_x, high_gradient_x)
-        y_loss = F.l1_loss(low_gradient_y, high_gradient_y)
-        gradient_loss = torch.mean(x_loss + y_loss) 
-        return gradient_loss
 
     def forward(self, low, high, hook=-1):
-        # low = low[:,:-1,:,:]
-        high = high[:,:-1,:,:]
         loss_recon = F.l1_loss(low, high)
         # loss_grad = self.gradient_loss(low, high)
-        loss_ssim = 1-self.ssim_loss(low, high)
-        loss_restore = loss_recon + loss_ssim
+        # loss_ssim = 1-self.ssim_loss(low, high)
+        loss_restore = loss_recon# + loss_ssim
         return loss_restore
 
+def PSNR_Loss(low, high):
+    return -10.0 * torch.log(torch.mean(torch.pow(high-low, 2))) / torch.log(torch.as_tensor(10.0))
 
 class GAN_Loss(nn.Module):
     def __init__(self, mode='RaSGAN'):
@@ -294,8 +284,8 @@ class GAN_Loss(nn.Module):
                     BCE_stable(D_fake - torch.mean(D_real), y_zeros))/2
             loss_D = torch.mean(errD)
             # Generator loss
-            errG = (BCE_stable(D_real - torch.mean(D_fake), y_zeros) + 
-                    BCE_stable(D_fake - torch.mean(D_real), y_ones))/2
+            errG = (BCE_stable(D_real - torch.mean(D_fake_for_G), y_zeros) + 
+                    BCE_stable(D_fake_for_G - torch.mean(D_real), y_ones))/2
             loss_G = torch.mean(errG)
         elif self.gan_mode == 'RaLSGAN':
             # Discriminator loss
@@ -303,8 +293,8 @@ class GAN_Loss(nn.Module):
                     torch.mean((D_fake - torch.mean(D_real) + y_ones) ** 2))/2
             loss_D = errD
             # Generator loss (You may want to resample again from real and fake data)
-            errG = (torch.mean((D_real - torch.mean(D_fake) + y_ones) ** 2) + 
-                    torch.mean((D_fake - torch.mean(D_real) - y_ones) ** 2))/2
+            errG = (torch.mean((D_real - torch.mean(D_fake_for_G) + y_ones) ** 2) + 
+                    torch.mean((D_fake_for_G - torch.mean(D_real) - y_ones) ** 2))/2
             loss_G = errG
         
         return loss_D, loss_G

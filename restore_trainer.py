@@ -27,7 +27,7 @@ class Restore_Trainer(BaseTrainer):
         summary(self.model, input_size=[(3, 256, 256), (1,256,256)])
 
         optimizer = torch.optim.Adam(self.model.parameters(), lr=self.learning_rate)
-        scheduler = lr_scheduler.ExponentialLR(optimizer, gamma=0.994) #0.977237, 0.986233
+        scheduler = lr_scheduler.ExponentialLR(optimizer, gamma=0.997) #0.977237, 0.986233
         try:
             for iter in range(self.epochs):
                 self.model.train()
@@ -55,17 +55,19 @@ class Restore_Trainer(BaseTrainer):
                     loss = self.loss_fn(R_restore, R_high,R2,R4,R8, hook=hook_number)
                     hook_number = -1
                     if idx % 8 == 0:
-                        log(f"iter: {iter}_{idx}\taverage_loss: {loss.item():.6f}")
+                        with torch.no_grad():
+                            psnr = PSNR_Loss(R_restore, R_high)
+                        log(f"iter: {iter}_{idx}\taverage_loss: {loss.item():.6f} - PSNR:{psnr:.2f}")
                     loss.backward()
                     optimizer.step()
                     gpu_time += time.time()-gpu_time_iter 
                     idx += 1
 
                 if iter % self.print_frequency == 0:
-                    self.test(iter, plot_dir='./images/samples-restore-mask')
+                    self.test(iter, plot_dir='./images/samples-restore-mask-finetune')
 
                 if iter % self.save_frequency == 0:
-                    torch.save(self.model.state_dict(), f'./weights/restore-SID/restore_mask_{iter//100}.pth')
+                    torch.save(self.model.state_dict(), f'./weights/restore-finetune/restore_mask_finetune_{iter//100}.pth')
                     log("Weight Has saved as 'restore_net.pth'")
                 
                 scheduler.step()
@@ -136,7 +138,7 @@ if __name__ == "__main__":
 
     log("Buliding LOL Dataset...")
     dst_train = LOLDataset(root_path_train, list_path_train,
-                            crop_size=config['length'], to_RAM=False)
+                            crop_size=config['length'], to_RAM=True)
     dst_test = LOLDataset(root_path_test, list_path_test,
                             crop_size=config['length'], to_RAM=True, training=False)
 
@@ -147,7 +149,7 @@ if __name__ == "__main__":
     trainer = Restore_Trainer(config, train_loader, criterion, model, 
                             dataloader_test=test_loader, decom_net=decom_net)
 
-    if args.mode == 'test':
+    if args.mode == 'train':
         trainer.train()
     else:
         trainer.test(plot_dir='./images/samples-restore')

@@ -14,9 +14,9 @@ from skimage.measure import compare_psnr, compare_ssim
 def log(string, log=None):
     log_string = f'{time.strftime("%H:%M:%S")} >>  {string}'
     print(log_string)
-    # if log is not None:
-    #     with open(log,'a+') as f:
-    #         f.write(log_string+'\n')
+    if log is not None:
+        with open(log,'a+') as f:
+            f.write(log_string+'\n')
 
 def data_augmentation(image, mode):
     if mode == 0:
@@ -254,7 +254,7 @@ def hsv2rgb(img, dim=0):
     return img_rgb
 
 
-def sample(imgs, split=None ,figure_size=(2, 3), img_dim=(400, 600), path=None, num=0, metrics=False):
+def sample(imgs, split=None ,figure_size=(1, 1), img_dim=(400, 600), path=None, num=0, metrics=False):
     if type(img_dim) is int:
         img_dim = (img_dim, img_dim)
     img_dim = tuple(img_dim)
@@ -264,9 +264,10 @@ def sample(imgs, split=None ,figure_size=(2, 3), img_dim=(400, 600), path=None, 
     elif len(img_dim) == 2:
         h_dim, w_dim = img_dim
     h, w = figure_size
+    num_of_imgs = figure_size[0] * figure_size[1]
+    gap = len(imgs) // num_of_imgs
+    colormap = True# if gap > 1 else False
     if split is None:
-        num_of_imgs = figure_size[0] * figure_size[1]
-        gap = len(imgs) // num_of_imgs
         split = list(range(0, len(imgs)+1, gap))
     figure = np.zeros((h_dim*h, w_dim*w, 3))
     for i in range(h):
@@ -288,7 +289,7 @@ def sample(imgs, split=None ,figure_size=(2, 3), img_dim=(400, 600), path=None, 
                 if j < w-1: 
                     img_lr = digit.transpose(1,2,0)
                     psnr = compare_psnr(img_hr, img_lr)
-                    ssim = compare_ssim(img_hr, img_lr, multichannel=True)
+                    ssim = compare_ssim(img_hr, img_lr, multichannel=colormap)
                     text = f'psnr:{psnr:.4f} - ssim:{ssim:.4f}'
                     log(text, log='./logs.txt')
                     font = cv2.FONT_HERSHEY_COMPLEX_SMALL

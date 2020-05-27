@@ -29,7 +29,7 @@ class Illum_Trainer(BaseTrainer):
         self.model.train()
         log(f'Using device {self.device}')
         self.model.to(device=self.device)
-        self.model.I_standard.set_parameter(w=0.5, sigma=2.0)
+        self.model.I_standard.set_parameter(w=0.5, sigma=2)
         # summary(self.model, input_size=[(1, 384, 384), (1,)], batch_size=4)
 
         optimizer = torch.optim.Adam(self.model.parameters(), lr=self.learning_rate)
@@ -50,11 +50,15 @@ class Illum_Trainer(BaseTrainer):
                         _, I_high = self.decom_net(L_high)
                         w, sigma = self.model.I_standard.get_parameter()
                         ratio = torch.mean(I_high) / 0.5
+                        ratio_low = torch.mean(I_low) / 0.5
                     I_out, I_standard = self.model(I_low, ratio)
-                    loss = self.loss_fn(I_out, I_high, I_standard)
+                    I_out_low, _ = self.model(I_high, ratio_low)
+                    loss = self.loss_fn(I_out, I_high, I_standard) + self.loss_fn(I_out_low, I_low, I_standard)*0.1
 
                     if idx % 6 == 0:
-                        log(f"iter: {iter}_{idx}\taverage_loss: {loss.item():.6f}")
+                        with torch.no_grad():
+                            psnr = PSNR_Loss(I_out, I_high)
+                        log(f"iter: {iter}_{idx}\taverage_loss: {loss.item():.6f} - PSNR:{psnr:.2f}")
                     loss.backward()
                     optimizer.step()
                     gpu_time += time.time()-gpu_time_iter 
@@ -64,7 +68,7 @@ class Illum_Trainer(BaseTrainer):
                     self.test(iter, plot_dir='./images/samples-illum-custom')
 
                 if iter % self.save_frequency == 0:
-                    torch.save(self.model.state_dict(), f'./weights/illum-custom/illum_net_custom_{iter//100}.pth')
+                    torch.save(self.model.state_dict(), f'./weights/illum-custom/illum_custom_net_{iter//100}.pth')
                     log("Weight Has saved as 'illum_net.pth'")
                         
                 scheduler.step()
@@ -74,7 +78,7 @@ class Illum_Trainer(BaseTrainer):
                 log(f"Time taken: {iter_end_time - iter_start_time:.3f} sec, include gpu_time {gpu_time:.3f} sec\t lr={scheduler.get_lr()[0]:.6f}")
 
         except KeyboardInterrupt:
-            torch.save(self.model.state_dict(), './weights/INTERRUPTED_illum_custom.pth')
+            torch.save(self.model.state_dict(), './weights/INTERRUPTED_illum.pth')
             log('Saved interrupt')
             try:
                 sys.exit(0)
@@ -94,27 +98,29 @@ class Illum_Trainer(BaseTrainer):
                 _, I_high = self.decom_net(L_high)
                 ratio = torch.mean(I_high) / 0.5
                 I_out, I_standard = self.model(I_low, ratio)
+                I_out = torch.clamp(I_out, 0.0, 1.0)
+                
             # I_low_standard = standard_illum(I_low, w=0.72, gamma=0.53, blur=True)
             # I_high_standard = standard_illum(I_high, w=0.08, gamma=1.34)
 
             I_standard_np = I_standard.detach().cpu().numpy()[0]
             I_out_np = I_out.detach().cpu().numpy()[0]
-            I_low_np = I_low.detach().cpu().numpy()[0]
+            # I_low_np = I_low.detach().cpu().numpy()[0]
             I_high_np = I_high.detach().cpu().numpy()[0]
             # I_low_standard = standard_illum(I_low_np, dynamic=3)
             # I_high_standard = standard_illum(I_high_np)
 
-            sample_imgs = np.concatenate( (I_low_np, I_high_np, I_standard_np, I_out_np), axis=0 )
+            sample_imgs = np.concatenate( (I_standard_np, I_out_np, I_high_np), axis=0 )
 
             filepath = os.path.join(plot_dir, f'{name[0]}_epoch_{epoch//100}.png')
-            split_point = [0, 1, 2, 3, 4]
-            img_dim = I_low_np.shape[1:]
-            sample(sample_imgs, split=split_point, figure_size=(2, 2), 
-                        img_dim=img_dim, path=filepath, num=epoch)
+            split_point = [0, 1, 2, 3]
+            img_dim = I_high_np.shape[1:]
+            sample(sample_imgs, split=split_point, figure_size=(1, 3), 
+                        img_dim=img_dim, path=filepath, num=epoch, metrics=True)
             
 
 if __name__ == "__main__":
-    criterion = Illum_Custom_Loss()
+    criterion = Illum_Loss()
     decom_net = DecomNet()
     model = IllumNet_Custom()
 
@@ -126,10 +132,9 @@ if __name__ == "__main__":
 
     args.checkpoint = True
     if args.checkpoint is not None:
-        if config['noDecom'] is False:
-            decom_net = load_weights(decom_net, path='./weights/decom_net_normal.pth')
-            log('DecomNet loaded from decom_net.pth')
-        model = load_weights(model, path='./weights/illum_net_custom.pth')
+        decom_net = load_weights(decom_net, path='./weights/decom_net_normal.pth')
+        log('DecomNet loaded from decom_net.pth')
+        model = load_weights(model, path='./weights/illum-custom/illum_net_custom_0.pth')
         log('Model loaded from illum_net.pth')
 
     root_path_train = r'H:\datasets\Low-Light Dataset\KinD++\LOLdataset\our485'
@@ -152,7 +157,7 @@ if __name__ == "__main__":
     trainer = Illum_Trainer(config, train_loader, criterion, model, 
                             dataloader_test=test_loader, decom_net=decom_net)
 
-    if args.mode == 'test':
+    if args.mode == 'train':
         trainer.train()
     else:
         trainer.test(epoch=0)
