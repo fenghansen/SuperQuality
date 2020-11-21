@@ -11,7 +11,7 @@ import time
 from PIL import Image
 import torchvision.transforms as transforms
 from torch.utils.data import Dataset, DataLoader
-import pytorch_colors as colors
+# import pytorch_colors as colors
 from utils import *
 
 

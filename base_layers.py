@@ -78,16 +78,17 @@ class UNetUpBlock(nn.Module):
         self.up = nn.ConvTranspose2d(in_size, out_size, kernel_size=2, stride=2, bias=True)
         self.conv_block = UNetConvBlock(in_size, out_size, slope)
 
-    def center_crop(self, layer, target_size):
+    def up_pad(self, layer, target_size):
         _, _, layer_height, layer_width = layer.size()
-        diff_y = (layer_height - target_size[0]) // 2
-        diff_x = (layer_width - target_size[1]) // 2
-        return layer[:, :, diff_y:(diff_y + target_size[0]), diff_x:(diff_x + target_size[1])]
+        diff_y = target_size[0] - layer_height
+        diff_x = target_size[1] - layer_width
+        layer = F.pad(layer, (diff_x // 2, diff_x - diff_x//2, diff_y // 2, diff_y - diff_y//2), mode='reflect')
+        return layer
 
     def forward(self, x, bridge):
         up = self.up(x)
-        crop1 = self.center_crop(bridge, up.shape[2:])
-        out = torch.cat([up, crop1], 1)
+        up = self.up_pad(up, bridge.shape[2:])
+        out = torch.cat([up, bridge], 1)
         out = self.conv_block(out)
 
         return out

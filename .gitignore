@@ -2,8 +2,11 @@
 images/
 weights/
 *.png
-*.pth
 *.json
+*.bmp
+*.jpg
+*.txt
+*.zip
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

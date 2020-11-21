@@ -549,6 +549,23 @@ class UNet_VDN(nn.Module):
 
         return self.last(x)
 
+class VDN(nn.Module):
+    def __init__(self, in_channels, wf=64, dep_S=5, dep_U=4, slope=0.2):
+        super(VDN, self).__init__()
+        self.DNet = UNet_VDN(in_channels, in_channels*2, wf=wf, depth=dep_U, slope=slope)
+        self.SNet = DnCNN(in_channels, in_channels*2, dep=dep_S, num_filters=64, slope=slope)
+
+    def forward(self, x, mode='train'):
+        if mode.lower() == 'train':
+            phi_Z = self.DNet(x)
+            phi_sigma = self.SNet(x)
+            return phi_Z, phi_sigma
+        elif mode.lower() == 'test':
+            phi_Z = self.DNet(x)
+            return phi_Z
+        elif mode.lower() == 'sigma':
+            phi_sigma = self.SNet(x)
+            return phi_sigma
 
 class KinD_noDecom(nn.Module):
     def __init__(self, filters=32, activation='lrelu'):

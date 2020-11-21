@@ -653,3 +653,15 @@
 21:13:13 >>  Saving Image at ./images/outputs-illum-custom-light/2_3.png
 21:13:13 >>  Saving Image at ./images/outputs-illum-custom-light/2_4.png
 21:13:13 >>  Saving Image at ./images/outputs-illum-custom-light/2_extra.png
+14:52:51 >>  Saving Image at C:/DeepLearning/SuperQuality/images/test/test_extra.png
+14:56:19 >>  Saving Image at C:/DeepLearning/SuperQuality/images/test/test_extra.png
+16:04:27 >>  Saving Image at C:/DeepLearning/SuperQuality/images/test/test_extra.png
+16:19:53 >>  Saving Image at C:/DeepLearning/SuperQuality/images/test/ÐÞ³µÌ¯_extra.png
+18:56:32 >>  Saving Image at C:/DeepLearning/SuperQuality/images/test/night_extra.png
+00:13:56 >>  Saving Image at C:/DeepLearning/SuperQuality/images/test/rdfz_extra.png
+18:51:59 >>  Saving Image at C:/DeepLearning/SuperQuality/images/test/bicycle_1.0_extra.png
+18:52:25 >>  Saving Image at C:/DeepLearning/SuperQuality/images/test/bicycle_1.4_extra.png
+19:00:28 >>  Saving Image at C:/DeepLearning/SuperQuality/images/test/bicycle_1.0_extra.png
+19:02:10 >>  Saving Image at C:/DeepLearning/SuperQuality/images/test/bicycle_1.0_extra.png
+13:42:10 >>  Saving Image at C:/DeepLearning/SuperQuality/images/test/night_extra.png
+07:00:25 >>  Saving Image at F:/DeepLearning/SuperQuality/images/test/newspaper_extra.png
